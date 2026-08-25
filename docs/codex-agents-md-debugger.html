@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Debug Codex AGENTS.md discovery and missing instructions | Instructree</title>
+    <meta name="description" content="Debug missing Codex AGENTS.md instructions, nested project-root boundaries, override precedence, byte-budget truncation, and disabled skills with one local command.">
+    <link rel="canonical" href="https://kotobuki09.github.io/instructree/codex-agents-md-debugger.html">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Debug Codex AGENTS.md discovery and missing instructions">
+    <meta property="og:description" content="A source-grounded checklist for missing Codex instructions, nested .git boundaries, overrides, truncation, and skill configuration.">
+    <meta property="og:url" content="https://kotobuki09.github.io/instructree/codex-agents-md-debugger.html">
+    <meta property="og:image" content="https://raw.githubusercontent.com/kotobuki09/instructree/main/assets/social-preview.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Debug Codex AGENTS.md discovery">
+    <meta name="twitter:description" content="Find why Codex instructions or skills appear to be missing before starting a session.">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="site.css">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "TechArticle",
+            "headline": "Debug Codex AGENTS.md discovery and missing instructions",
+            "description": "A source-grounded troubleshooting guide for Codex project instructions, root markers, precedence, byte budgets, global instructions, and skills.",
+            "datePublished": "2026-08-26",
+            "dateModified": "2026-08-26",
+            "mainEntityOfPage": "https://kotobuki09.github.io/instructree/codex-agents-md-debugger.html",
+            "url": "https://kotobuki09.github.io/instructree/codex-agents-md-debugger.html",
+            "isPartOf": {
+              "@type": "WebSite",
+              "name": "Instructree",
+              "url": "https://kotobuki09.github.io/instructree/"
+            }
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Why is Codex ignoring a parent AGENTS.md file?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Codex stops project-instruction discovery at the nearest configured project-root marker. A nested .git entry, submodule, worktree, or custom marker can therefore exclude plausible parent files."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does AGENTS.override.md replace AGENTS.md?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Within one directory, Codex checks AGENTS.override.md before AGENTS.md and configured fallback names. The first regular candidate wins, including an empty project file."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can Codex truncate AGENTS.md instructions?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Codex applies one shared project-document byte budget across the selected root-to-working-directory chain. Later content can be truncated or excluded when that budget is exhausted."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does a successful static audit prove Codex followed every instruction?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Static discovery is not proof of live model adherence. A pre-session audit can explain candidate selection and configuration, but it cannot establish what a running or resumed session followed."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Instructree home">
+        <span class="brand-mark" aria-hidden="true">⌁</span>
+        <span>Instructree</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#checklist">Checklist</a>
+        <a href="#evidence">Evidence</a>
+        <a class="nav-cta" href="https://github.com/kotobuki09/instructree">View on GitHub</a>
+      </nav>
+    </header>
+
+    <main class="guide">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="index.html">Instructree</a>
+        <span aria-hidden="true">/</span>
+        <span>Codex AGENTS.md debugger</span>
+      </nav>
+
+      <article>
+        <header class="guide-hero">
+          <p class="eyebrow"><span></span> Codex troubleshooting guide</p>
+          <h1>Debug Codex AGENTS.md before your next session.</h1>
+          <p class="guide-lede">When an instruction looks present on disk but absent in Codex, guessing from the model's response is unreliable. Inspect the deterministic pre-session inputs first: the selected project root, file precedence, shared byte budget, global user instructions, and skill configuration.</p>
+          <div class="guide-command" aria-label="Run the Codex setup doctor">
+            <span class="prompt" aria-hidden="true">$</span>
+            <code>npx --yes github:kotobuki09/instructree#v0.17.0 doctor .</code>
+          </div>
+          <p class="guide-note">Local static analysis · zero runtime dependencies · no model call · does not upload repository content</p>
+        </header>
+
+        <section class="guide-section" aria-labelledby="fast-answer">
+          <div class="section-kicker">The fast answer</div>
+          <h2 id="fast-answer">Start with the root boundary, not the file you expected.</h2>
+          <p>Codex chooses the nearest project-root marker while walking upward from the working directory. By default that marker is <code>.git</code>; user configuration can replace or extend the marker list. Even an empty nested .git directory can therefore select a nearer root. Discovery then runs only from that selected root down to the working directory. It does not continue into an outer repository, so a nested project-root marker can change the entire instruction chain.</p>
+          <div class="callout warning">
+            <strong>A common surprise</strong>
+            <p>An empty nested <code>.git</code> directory is still a filesystem marker. A submodule or worktree can also introduce a nearer marker. In all three cases, a parent <code>AGENTS.md</code> may look relevant to a human while remaining outside Codex's selected project chain.</p>
+          </div>
+          <p>Instructree reports that distinction without silently adding the parent file:</p>
+          <pre><code>root boundary: 1 parent instruction ignored above selected project root
+- &lt;parent&gt;/AGENTS.md · ignored above selected project root
+- outer marker: .git at &lt;parent&gt;</code></pre>
+          <p>The redacted <code>&lt;parent&gt;</code> label makes the output suitable for an issue report without exposing a home directory or checkout path.</p>
+        </section>
+
+        <section class="guide-section" id="checklist" aria-labelledby="checklist-title">
+          <div class="section-kicker">Diagnostic checklist</div>
+          <h2 id="checklist-title">Five reasons Codex instructions appear to be missing.</h2>
+          <ol class="step-list">
+            <li>
+              <div>
+                <h3>The nearest project-root marker is not the root you expected</h3>
+                <p>Check the reported marker and working-directory path first. If a nearer marker exists, parent project instructions are out of scope. The doctor reports an outer marker only when it finds an actual nested project boundary, keeping ordinary standalone repositories quiet.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>An override or fallback won in the same directory</h3>
+                <p>Codex checks <code>AGENTS.override.md</code>, then <code>AGENTS.md</code>, then configured fallback filenames. It selects the first regular candidate. An empty project candidate still blocks lower-priority names in that directory, so inspect the selected filename instead of only checking whether <code>AGENTS.md</code> exists.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>The shared byte budget was exhausted</h3>
+                <p>The root-to-current-directory instruction chain uses one shared byte budget controlled by <code>project_doc_max_bytes</code>. A large broad file can leave less space for a more specific file. The doctor reports included bytes, truncation, and whether the combined budget was exhausted.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>Global user instructions and project instructions were conflated</h3>
+                <p>Global user instructions live under <code>~/.codex/AGENTS.override.md</code> or <code>~/.codex/AGENTS.md</code>. Their selection rule is separate from the repository chain. An empty global override is skipped, while an empty project candidate remains selected. The doctor presents these surfaces separately.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>A discovered skill is disabled by user config</h3>
+                <p>A skill can exist on disk but be disabled by user config. The report applies the supported subset of <code>~/.codex/config.toml</code>, including later-rule precedence, and labels candidates disabled by user config, unmatched selectors, malformed metadata, duplicate names, and approximate list pressure.</p>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <section class="guide-section" aria-labelledby="symptoms-title">
+          <div class="section-kicker">Symptom map</div>
+          <h2 id="symptoms-title">Match the symptom to the evidence.</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Symptom</th>
+                  <th>Inspect</th>
+                  <th>Useful signal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Parent rules disappear in a submodule</td>
+                  <td>Selected and outer project markers</td>
+                  <td><code>repository.boundary</code></td>
+                </tr>
+                <tr>
+                  <td>The wrong file wins in one directory</td>
+                  <td>Override, standard, fallback precedence</td>
+                  <td><code>instructions.project.files</code></td>
+                </tr>
+                <tr>
+                  <td>Rules near the end are absent</td>
+                  <td>Included bytes and combined limit</td>
+                  <td><code>budgetExhausted</code></td>
+                </tr>
+                <tr>
+                  <td>Personal defaults seem absent</td>
+                  <td>User instruction selection</td>
+                  <td><code>instructions.user</code></td>
+                </tr>
+                <tr>
+                  <td>A skill exists but does not activate</td>
+                  <td>User skill-config rules and metadata</td>
+                  <td><code>disabledByUserConfigCount</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="guide-section" aria-labelledby="share-title">
+          <div class="section-kicker">Share-safe evidence</div>
+          <h2 id="share-title">Capture the configuration result without dumping a session.</h2>
+          <p>For a deterministic report suitable for tooling or a minimal bug reproduction, add <code>--json</code>:</p>
+          <pre><code>npx --yes github:kotobuki09/instructree#v0.17.0 doctor . --json</code></pre>
+          <p>Both text and JSON replace the repository and home locations with logical labels. The command reads only the supported user-config subset and fails closed when relevant TOML syntax is outside that subset.</p>
+          <div class="callout">
+            <strong>Important boundary</strong>
+            <p>This is a static pre-session preview. It does not inspect a running or resumed Codex session, managed configuration, profiles, session flags, project trust, remote environments, plugins, or model adherence. A clean report is not proof that a model followed every loaded instruction.</p>
+          </div>
+        </section>
+
+        <section class="guide-section" id="evidence" aria-labelledby="evidence-title">
+          <div class="section-kicker">Primary evidence</div>
+          <h2 id="evidence-title">The checks follow documented and source-pinned behavior.</h2>
+          <ul class="source-list">
+            <li><a href="https://github.com/openai/codex/issues/25651">openai/codex#25651</a> — an empty nested <code>.git</code> marker explained missing parent instructions and skills.</li>
+            <li><a href="https://github.com/openai/codex/issues/30789">openai/codex#30789</a> — a focused request for a warning when a submodule boundary hides a superproject <code>AGENTS.md</code>.</li>
+            <li><a href="https://github.com/openai/codex/issues/30788">openai/codex#30788</a> — a request for a deterministic pre-session AGENTS.md diagnostic command.</li>
+            <li><a href="https://github.com/openai/codex/blob/4213b38f3c555049bf6f494065698a3dfe587c16/codex-rs/core/src/agents_md.rs#L202-L264">Codex implementation at <code>4213b38</code></a> — nearest-marker root selection, root-to-working-directory traversal, and per-directory candidate precedence.</li>
+            <li><a href="https://developers.openai.com/codex/skills">Official Codex skills documentation</a> — skill discovery and configuration context.</li>
+            <li><a href="research/codex-root-boundary.md">Instructree root-boundary research note</a> — the exact static-analysis boundary and pinned citations.</li>
+          </ul>
+        </section>
+
+        <section class="guide-section guide-cta" aria-labelledby="next-title">
+          <div class="section-kicker">Next step</div>
+          <h2 id="next-title">Run the report from the directory where Codex will start.</h2>
+          <p>The working directory is part of the discovery result. Run the doctor there, inspect any attention signals, and only then change an instruction file or marker.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/kotobuki09/instructree">Get Instructree <span aria-hidden="true">→</span></a>
+            <a class="button secondary" href="https://github.com/kotobuki09/instructree/blob/main/docs/codex-setup.md">Read the Codex setup</a>
+          </div>
+        </section>
+      </article>
+    </main>
+
+    <footer>
+      <span>Instructree · MIT licensed</span>
+      <span>Local static analysis. No model calls. No telemetry.</span>
+    </footer>
+  </body>
+</html>

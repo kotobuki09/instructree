@@ -45,6 +45,8 @@ Diagnose Codex instructions, supported user config, and skill state in one share
 instructree doctor
 ```
 
+If Codex appears to ignore a parent file, follow the source-grounded [Codex AGENTS.md debugging guide](https://kotobuki09.github.io/instructree/codex-agents-md-debugger.html) for project-root markers, overrides, byte budgets, user instructions, and disabled skills.
+
 Trace the Codex project instructions for one file:
 
 ```bash
