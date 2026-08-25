@@ -4,7 +4,7 @@
 
 **Find the instructions your AI coding agent will actually use.**
 
-Map and lint `AGENTS.md`, `CLAUDE.md`, Copilot instructions, agent skills, and agentic workflows—locally, with zero runtime dependencies.
+Map and lint `AGENTS.md`, `CLAUDE.md`, Copilot instructions, agent skills, and agentic workflows—including recursive `@path` imports—locally, with zero runtime dependencies.
 
 [![CI](https://github.com/kotobuki09/instructree/actions/workflows/ci.yml/badge.svg)](https://github.com/kotobuki09/instructree/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f.svg)](LICENSE)
@@ -27,7 +27,7 @@ npx --yes github:kotobuki09/instructree
 Ask what may apply to one file:
 
 ```bash
-npx --yes github:kotobuki09/instructree explain src/api/client.ts
+npx --yes github:kotobuki09/instructree explain src/api/client.ts --effective
 ```
 
 Install from GitHub if you want the command everywhere:
@@ -44,6 +44,7 @@ instructree
 - skill names that do not use portable kebab-case or match their folder;
 - broken relative Markdown links inside agent instruction files;
 - instruction files that are manual-only because they have no path glob;
+- recursive Copilot `@path` imports that are missing, cyclic, duplicated, absolute, or escape the repository;
 - likely `always`/`never` conflicts in overlapping scopes, clearly labeled as heuristic.
 
 It prints stable file-and-line diagnostics and exits nonzero for schema errors, so the default is safe for CI. Add `--strict` to fail on warnings too.
@@ -54,11 +55,30 @@ It prints stable file-and-line diagnostics and exits nonzero for schema errors, 
 | --- | --- | --- |
 | Cross-agent | `AGENTS.md` at any depth | Directory scope |
 | Claude | `CLAUDE.md`, `CLAUDE.local.md`, `.claude/rules/*.md` | Directory scope or `paths` |
-| GitHub Copilot | `.github/copilot-instructions.md`, `*.instructions.md` | Repository scope or `applyTo` |
+| GitHub Copilot | `.github/copilot-instructions.md`, `*.instructions.md`, recursive `@path` imports | Repository scope, `applyTo`, and effective import graph |
 | Agent Skills | `.agents/skills/*/SKILL.md`, `.claude/skills/*/SKILL.md`, `.github/skills/*/SKILL.md` | Listed as on demand |
 | Custom agents | `.github/agents/*.agent.md` | Listed as on demand |
 | Agentic Workflows | `.github/workflows/*.md` | Metadata validation |
 | Other agents | `GEMINI.md`, `.cursor/rules/*.mdc`, `.windsurf/rules/*.md` | Directory scope or `globs` |
+
+### Trace the effective import graph
+
+[GitHub Copilot CLI expands relative `@path` lines](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-custom-instructions) in `.github/copilot-instructions.md`, `AGENTS.md`, and `CLAUDE.md`. Instructree follows those references recursively without executing anything:
+
+```bash
+instructree imports
+```
+
+```text
+AGENTS.md
+├─ docs/base-rules.md :4
+│  └─ docs/testing.md :8
+└─ docs/security.md :5
+
+clean · 1 roots · 3 imported files · 0 errors
+```
+
+The audit rejects absolute paths, repository escapes, symlink escapes, missing targets, cycles, oversized files, and graphs beyond its explicit safety limits. `GEMINI.md` and `*.instructions.md` references are not expanded because Copilot's documentation says it does not expand them.
 
 The formats are grounded in the current [VS Code custom-instructions documentation](https://github.com/microsoft/vscode-docs/blob/main/docs/agent-customization/custom-instructions.md), [GitHub customization matrix](https://docs.github.com/en/copilot/reference/customization-cheat-sheet), and [Agent Skills documentation](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills).
 
@@ -66,7 +86,8 @@ The formats are grounded in the current [VS Code custom-instructions documentati
 
 ```text
 instructree [scan] [root] [--json] [--strict]
-instructree explain <file> [--root <root>] [--json]
+instructree imports [root] [--json] [--strict]
+instructree explain <file> [--root <root>] [--effective] [--json]
 instructree --help | --version
 ```
 
@@ -83,7 +104,10 @@ instructree ../my-monorepo --strict
 instructree --json > instructree-report.json
 
 # See the broad-to-specific instruction map for a target
-instructree explain packages/api/src/routes.ts
+instructree explain packages/api/src/routes.ts --effective
+
+# Audit the transitive Copilot import graph
+instructree imports --json
 ```
 
 Exit codes are `0` for a passing policy, `1` for diagnostics that fail the selected policy, and `2` for invalid arguments or runtime errors.
@@ -107,6 +131,6 @@ jobs:
 
 ## Design boundaries
 
-Instructree is static analysis. It does not call a model, upload repository content, or claim to predict agent behavior. Discovery and precedence differ between clients and versions, so `explain` says what *may* apply and shows each format separately. Conflict detection is intentionally conservative and reported as a warning for human review.
+Instructree is static analysis. It does not call a model, upload repository content, or claim to predict agent behavior. Discovery and precedence differ between clients and versions, so `explain` says what *may* apply and shows each format separately. Import expansion is explicitly labeled as GitHub Copilot CLI behavior; other clients' import semantics are not inferred. Conflict detection is intentionally conservative and reported as a warning for human review.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the small, dependency-free development loop. If Instructree misses a real instruction format, [open an issue](https://github.com/kotobuki09/instructree/issues/new/choose) with a minimal example.
