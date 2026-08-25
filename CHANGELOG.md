@@ -4,6 +4,8 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+## 0.17.0 — 2026-08-26
+
 - Make `instructree doctor` report redacted parent instruction files hidden by a nearer configured project-root marker, including the nearest outer marker that establishes the boundary.
 
 ## 0.16.0 — 2026-08-26
