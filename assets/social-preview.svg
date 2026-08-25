@@ -27,15 +27,17 @@
     <text x="56" y="92" fill="url(#accent)" font-size="64" font-weight="800" letter-spacing="-3">Instructree</text>
     <text x="58" y="137" fill="#c9d1d9" font-size="24">See the instructions before your coding agent does.</text>
 
-    <g font-size="15" font-weight="600">
-      <rect x="800" y="52" width="116" height="34" rx="17" fill="#21262d" stroke="#3d444d"/>
-      <text x="858" y="74" fill="#f0f6fc" text-anchor="middle">AGENTS.md</text>
-      <rect x="926" y="52" width="116" height="34" rx="17" fill="#21262d" stroke="#3d444d"/>
-      <text x="984" y="74" fill="#f0f6fc" text-anchor="middle">CLAUDE.md</text>
-      <rect x="1052" y="52" width="94" height="34" rx="17" fill="#21262d" stroke="#3d444d"/>
-      <text x="1099" y="74" fill="#f0f6fc" text-anchor="middle">Copilot</text>
-      <rect x="1156" y="52" width="82" height="34" rx="17" fill="#21262d" stroke="#3d444d"/>
-      <text x="1197" y="74" fill="#f0f6fc" text-anchor="middle">Skills</text>
+    <g font-size="13" font-weight="600">
+      <rect x="680" y="52" width="110" height="34" rx="17" fill="#21262d" stroke="#3d444d"/>
+      <text x="735" y="74" fill="#f0f6fc" text-anchor="middle">AGENTS.md</text>
+      <rect x="800" y="52" width="150" height="34" rx="17" fill="#21262d" stroke="#3d444d"/>
+      <text x="875" y="74" fill="#f0f6fc" text-anchor="middle">AGENTS.override</text>
+      <rect x="960" y="52" width="112" height="34" rx="17" fill="#21262d" stroke="#3d444d"/>
+      <text x="1016" y="74" fill="#f0f6fc" text-anchor="middle">CLAUDE.md</text>
+      <rect x="1082" y="52" width="92" height="34" rx="17" fill="#21262d" stroke="#3d444d"/>
+      <text x="1128" y="74" fill="#f0f6fc" text-anchor="middle">Copilot</text>
+      <rect x="1184" y="52" width="70" height="34" rx="17" fill="#21262d" stroke="#3d444d"/>
+      <text x="1219" y="74" fill="#f0f6fc" text-anchor="middle">Skills</text>
     </g>
   </g>
 
@@ -49,20 +51,18 @@
 
     <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="20">
       <text x="88" y="276" fill="#7ee787">$</text>
-      <text x="114" y="276" fill="#f0f6fc">instructree explain src/api/client.ts --effective</text>
+      <text x="114" y="276" fill="#f0f6fc">instructree explain src/api/client.ts --client codex</text>
 
-      <text x="88" y="326" fill="#f0f6fc" font-weight="700">instructions for src/api/client.ts</text>
-      <text x="88" y="368" fill="#58a6ff">├─ AGENTS.md</text>
-      <text x="390" y="368" fill="#8b949e">always · repository</text>
-      <text x="88" y="404" fill="#58a6ff">├─ CLAUDE.md</text>
-      <text x="390" y="404" fill="#8b949e">always · repository</text>
-      <text x="88" y="440" fill="#c9d1d9">├─ .github/copilot-instructions.md</text>
-      <text x="570" y="440" fill="#8b949e">always · repository</text>
-      <text x="88" y="476" fill="#c9d1d9">└─ .github/instructions/typescript.instructions.md</text>
-      <text x="720" y="476" fill="#8b949e">**/*.ts</text>
+      <text x="88" y="326" fill="#f0f6fc" font-weight="700">Codex project chain</text>
+      <text x="88" y="368" fill="#58a6ff">1. AGENTS.override.md</text>
+      <text x="390" y="368" fill="#8b949e">repository-wide</text>
+      <text x="88" y="404" fill="#58a6ff">2. src/AGENTS.md</text>
+      <text x="390" y="404" fill="#8b949e">directory scope: src/</text>
+      <text x="88" y="440" fill="#58a6ff">3. src/api/AGENTS.override.md</text>
+      <text x="510" y="440" fill="#8b949e">directory scope: src/api/</text>
 
-      <text x="88" y="526" fill="#7ee787" font-weight="700">clean</text>
-      <text x="156" y="526" fill="#8b949e">· 4 applicable · 0 errors · local only</text>
+      <text x="88" y="500" fill="#7ee787" font-weight="700">broad → specific</text>
+      <text x="294" y="500" fill="#8b949e">· repository-only · no uploads</text>
     </g>
   </g>
 
