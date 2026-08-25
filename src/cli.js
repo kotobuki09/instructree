@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs/promises";
 import { explain, scan } from "./index.js";
 import { formatExplain, formatImports, formatScan } from "./format.js";
+import { formatSarif } from "./sarif.js";
 
 const packagePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../package.json");
 
@@ -10,7 +11,7 @@ function usage() {
   return `instructree — map and lint AI coding-agent instructions
 
 Usage:
-  instructree [scan] [root] [--json] [--strict]
+  instructree [scan] [root] [--json | --sarif] [--strict]
   instructree imports [root] [--json] [--strict]
   instructree explain <file> [--root <root>] [--effective] [--json]
   instructree --help | --version
@@ -22,11 +23,20 @@ Exit codes:
 }
 
 function parseArguments(argv) {
-  const options = { command: "scan", json: false, strict: false, effective: false, root: null, target: null };
+  const options = {
+    command: "scan",
+    json: false,
+    sarif: false,
+    strict: false,
+    effective: false,
+    root: null,
+    target: null,
+  };
   const positional = [];
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--json") options.json = true;
+    else if (argument === "--sarif") options.sarif = true;
     else if (argument === "--strict") options.strict = true;
     else if (argument === "--effective") options.effective = true;
     else if (argument === "--root") {
@@ -51,6 +61,12 @@ function parseArguments(argv) {
   }
   if (options.effective && options.command !== "explain") {
     throw new Error("--effective can only be used with explain");
+  }
+  if (options.json && options.sarif) {
+    throw new Error("--json and --sarif cannot be used together");
+  }
+  if (options.sarif && options.command !== "scan") {
+    throw new Error("--sarif can only be used with scan");
   }
   return options;
 }
@@ -89,14 +105,19 @@ export async function run(argv, io = console) {
     options.command === "explain"
       ? await explain(options.target, options.root ?? process.cwd())
       : await scan(options.root);
+  const sarif = options.sarif
+    ? formatSarif(result, JSON.parse(await fs.readFile(packagePath, "utf8")).version)
+    : null;
   io.log(
-    options.json
-      ? jsonResult(result, options.command)
-      : options.command === "explain"
-        ? formatExplain(result, options.effective)
-        : options.command === "imports"
-          ? formatImports(result)
-          : formatScan(result),
+    options.sarif
+      ? sarif
+      : options.json
+        ? jsonResult(result, options.command)
+        : options.command === "explain"
+          ? formatExplain(result, options.effective)
+          : options.command === "imports"
+            ? formatImports(result)
+            : formatScan(result),
   );
 
   const policyDiagnostics = options.command === "imports" ? result.imports.diagnostics : result.diagnostics;

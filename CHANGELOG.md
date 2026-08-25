@@ -2,6 +2,12 @@
 
 All notable changes to Instructree are documented here.
 
+## 0.6.0 — 2026-08-26
+
+- Add `scan --sarif` output compatible with SARIF 2.1.0 and GitHub code scanning.
+- Emit stable rule metadata, repository-relative artifact URIs, line locations, and native severity levels.
+- Reject ambiguous `--json --sarif` combinations and limit SARIF output to repository scans.
+
 ## 0.5.0 — 2026-08-26
 
 - Discover direct-child and nested skills in standalone catalogs.

@@ -52,3 +52,55 @@ test("imports JSON has a focused stable shape", async (context) => {
 test("rejects --effective outside explain", async () => {
   await assert.rejects(() => run(["scan", "--effective"]), /only be used with explain/);
 });
+
+test("scan SARIF emits GitHub-compatible rules, severities, and relative locations", async (context) => {
+  const root = await fixture({
+    "AGENTS.md": "@docs/missing.md\n",
+    ".agents/skills/wrong/SKILL.md": "---\nname: another-name\ndescription: Review code\n---\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+  const output = [];
+  const exitCode = await run(["scan", root, "--sarif"], { log: (value) => output.push(value) });
+  process.exitCode = 0;
+  const report = JSON.parse(output[0]);
+  const packageJson = JSON.parse(await fs.readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const runReport = report.runs[0];
+
+  assert.equal(exitCode, 1);
+  assert.equal(report.$schema, "https://json.schemastore.org/sarif-2.1.0.json");
+  assert.equal(report.version, "2.1.0");
+  assert.equal(runReport.tool.driver.name, "Instructree");
+  assert.equal(runReport.tool.driver.semanticVersion, packageJson.version);
+  assert.match(runReport.originalUriBaseIds["%SRCROOT%"].uri, /^file:\/\//);
+  assert.match(runReport.originalUriBaseIds["%SRCROOT%"].uri, /\/$/);
+
+  const warning = runReport.results.find((result) => result.ruleId === "W101");
+  assert.equal(warning.level, "warning");
+  assert.equal(warning.locations[0].physicalLocation.artifactLocation.uri, ".agents/skills/wrong/SKILL.md");
+  assert.equal(warning.locations[0].physicalLocation.artifactLocation.uriBaseId, "%SRCROOT%");
+  assert.equal(warning.locations[0].physicalLocation.region.startLine, 2);
+  assert.equal(runReport.tool.driver.rules[warning.ruleIndex].id, "W101");
+
+  const error = runReport.results.find((result) => result.ruleId === "E403");
+  assert.equal(error.level, "error");
+  assert.equal(error.message.text, "import target 'docs/missing.md' does not exist");
+  assert.equal(error.locations[0].physicalLocation.artifactLocation.uri, "AGENTS.md");
+});
+
+test("scan SARIF emits a valid empty results array for a clean repository", async (context) => {
+  const root = await fixture({ "AGENTS.md": "# Repository instructions\n" });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+  const output = [];
+  const exitCode = await run([root, "--sarif"], { log: (value) => output.push(value) });
+  process.exitCode = 0;
+  const report = JSON.parse(output[0]);
+
+  assert.equal(exitCode, 0);
+  assert.deepEqual(report.runs[0].results, []);
+});
+
+test("rejects incompatible or unsupported SARIF options", async () => {
+  await assert.rejects(() => run(["scan", "--json", "--sarif"]), /cannot be used together/);
+  await assert.rejects(() => run(["imports", "--sarif"]), /only be used with scan/);
+  await assert.rejects(() => run(["explain", "AGENTS.md", "--sarif"]), /only be used with scan/);
+});
