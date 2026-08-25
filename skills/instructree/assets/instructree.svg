@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Instructree</title>
+  <desc id="desc">A branching instruction graph in green, blue, and violet.</desc>
+  <defs>
+    <linearGradient id="background" x1="48" y1="32" x2="464" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#161b22"/>
+      <stop offset="1" stop-color="#090c10"/>
+    </linearGradient>
+    <linearGradient id="trunk" x1="168" y1="360" x2="364" y2="124" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3fb950"/>
+      <stop offset="0.55" stop-color="#58a6ff"/>
+      <stop offset="1" stop-color="#a371f7"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#background)" stroke="#30363d" stroke-width="8"/>
+  <path d="M256 402V256M256 304L142 190M256 256L370 142M256 214L184 142M256 334L354 236" fill="none" stroke="#30363d" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M256 402V256M256 304L142 190M256 256L370 142M256 214L184 142M256 334L354 236" fill="none" stroke="url(#trunk)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <g filter="url(#glow)">
+    <circle cx="256" cy="402" r="40" fill="#3fb950" stroke="#0d1117" stroke-width="14"/>
+    <circle cx="256" cy="256" r="34" fill="#58a6ff" stroke="#0d1117" stroke-width="14"/>
+    <circle cx="142" cy="190" r="40" fill="#3fb950" stroke="#0d1117" stroke-width="14"/>
+    <circle cx="370" cy="142" r="40" fill="#58a6ff" stroke="#0d1117" stroke-width="14"/>
+    <circle cx="184" cy="142" r="32" fill="#a371f7" stroke="#0d1117" stroke-width="14"/>
+    <circle cx="354" cy="236" r="32" fill="#58a6ff" stroke="#0d1117" stroke-width="14"/>
+  </g>
+</svg>

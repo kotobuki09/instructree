@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title">
+  <title id="title">Instructree</title>
+  <rect width="96" height="96" rx="22" fill="#0d1117"/>
+  <path d="M48 73V47M48 55L28 35M48 47L68 27M48 39L35 26" fill="none" stroke="#8b949e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="48" cy="74" r="8" fill="#3fb950"/>
+  <circle cx="48" cy="47" r="7" fill="#58a6ff"/>
+  <circle cx="28" cy="35" r="8" fill="#3fb950"/>
+  <circle cx="68" cy="27" r="8" fill="#58a6ff"/>
+  <circle cx="35" cy="26" r="6" fill="#a371f7"/>
+</svg>

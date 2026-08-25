@@ -1,4 +1,7 @@
 interface:
   display_name: "Instructree"
   short_description: "Audit coding-agent instruction scope and conflicts"
+  icon_small: "./assets/instructree-small.svg"
+  icon_large: "./assets/instructree.svg"
+  brand_color: "#2EA44F"
   default_prompt: "Use $instructree to audit the agent instructions in this repository."
