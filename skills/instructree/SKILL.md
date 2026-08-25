@@ -15,7 +15,7 @@ Use Instructree to establish which instruction files exist, which may apply to a
 Work from the repository root. Prefer an already installed `instructree` command or the checked-out package's local binary. If neither is available, ask before downloading executable packages, then use the pinned release:
 
 ```bash
-npx github:kotobuki09/instructree#3e272a12f38ef5d18a29f6df64934fcb9895d498 scan .
+npx github:kotobuki09/instructree#60dc968c8e4885af615408461bc8e8f73b599912 scan .
 ```
 
 Do not add `--yes` unless the user has authorized non-interactive package downloads.
