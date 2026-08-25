@@ -63,12 +63,14 @@ export function formatExplain(result, showEffective = false) {
   if (result.applicable.length === 0) {
     lines.push(dim("No automatically applicable instruction files found."));
   } else {
-    lines.push(cyan(result.client === "codex" ? "applies, broad → specific" : "may apply, broad → specific"));
+    lines.push(cyan(result.client === "codex" ? "selected, broad → specific" : "may apply, broad → specific"));
     result.applicable.forEach((file, index) => {
       const bytes = result.client === "codex"
         ? file.empty
-          ? " · selected, empty"
-          : ` · ${file.includedBytes}/${file.bytes} bytes${file.truncated ? ", truncated" : ""}`
+          ? ` · selected, empty${file.truncated ? ` · 0/${file.bytes} bytes, truncated` : ""}`
+          : file.includedEmpty
+            ? ` · 0/${file.bytes} bytes, truncated prefix is whitespace`
+            : ` · ${file.includedBytes}/${file.bytes} bytes${file.truncated ? ", truncated" : ""}`
         : "";
       lines.push(`${index + 1}. ${file.path} ${dim(`[${file.family} · ${file.reason}${bytes}]`)}`);
     });

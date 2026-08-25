@@ -58,9 +58,9 @@ function parseArguments(argv) {
     else if (argument === "--max-bytes") {
       const value = argv[index + 1];
       index += 1;
-      if (!value || !/^[1-9]\d*$/.test(value)) throw new Error("--max-bytes requires a positive integer");
+      if (!value || !/^(?:0|[1-9]\d*)$/.test(value)) throw new Error("--max-bytes requires a non-negative integer");
       options.maxBytes = Number(value);
-      if (!Number.isSafeInteger(options.maxBytes)) throw new Error("--max-bytes requires a positive integer");
+      if (!Number.isSafeInteger(options.maxBytes)) throw new Error("--max-bytes requires a non-negative integer");
     }
     else if (argument === "--code-scanning") options.codeScanning = true;
     else if (argument === "--root") {
@@ -254,8 +254,8 @@ export async function run(argv, io = console) {
     options.command === "explain"
       ? await explain(options.target, options.root ?? process.cwd(), {
           client: options.client,
-          fallbackFilenames: options.fallbackFilenames,
-          ...(options.maxBytes === null ? {} : { maxBytes: options.maxBytes }),
+          ...(options.client === "codex" ? { fallbackFilenames: options.fallbackFilenames } : {}),
+          ...(options.client === "codex" && options.maxBytes !== null ? { maxBytes: options.maxBytes } : {}),
         })
       : await scan(options.root);
   const sarif = options.sarif

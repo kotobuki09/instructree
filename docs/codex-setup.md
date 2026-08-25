@@ -12,7 +12,7 @@ Alternatively, use the cross-agent installer:
 npx skills add kotobuki09/instructree --skill instructree -g --agent codex
 ```
 
-The skill tells Codex when to scan the repository, trace recursive imports, or explain the instruction scope for one file. For a Codex target, `instructree explain <file> --client codex` reports the repository project-instruction chain using Codex override precedence. Add repeatable `--fallback <filename>` values and `--max-bytes <positive-integer>` to mirror `project_doc_fallback_filenames` and `project_doc_max_bytes` explicitly. It asks before downloading the CLI when no local command is available.
+The skill tells Codex when to scan the repository, trace recursive imports, or explain the instruction scope for one file. For a Codex target, `instructree explain <file> --client codex` reports the repository project-instruction chain using Codex override precedence. Add repeatable `--fallback <filename>` values and `--max-bytes <non-negative-integer>` to mirror `project_doc_fallback_filenames` and `project_doc_max_bytes` explicitly. It asks before downloading the CLI when no local command is available.
 
 To add the same secure SARIF checks to a repository, run:
 
@@ -22,7 +22,7 @@ npx --yes github:kotobuki09/instructree#v0.10.0 init --code-scanning
 
 The generated workflow uses least-privilege permissions, avoids privileged SARIF uploads from forked pull requests, and refuses to overwrite an existing workflow.
 
-Instructree recognizes Codex-specific `AGENTS.override.md` files described in the official [OpenAI Codex AGENTS.md guide](https://learn.chatgpt.com/docs/agent-configuration/agents-md). They are shown with normal directory scope in `scan` and neutral `explain`, while `explain --client codex` resolves the first existing regular candidate per directory, even when that candidate is empty. Its JSON output reports the configured fallbacks, shared byte budget, included bytes, and truncation state. Codex overrides remain outside GitHub Copilot CLI `@path` import expansion.
+Instructree recognizes Codex-specific `AGENTS.override.md` files described in the official [OpenAI Codex AGENTS.md guide](https://learn.chatgpt.com/docs/agent-configuration/agents-md). They are shown with normal directory scope in `scan` and neutral `explain`, while `explain --client codex` resolves the first existing regular candidate per directory, even when that candidate is empty. Its JSON output reports the configured fallbacks, shared byte budget, included bytes, and truncation state. The empty-candidate and byte-budget details are checked against the pinned [Codex implementation](https://github.com/openai/codex/blob/9be8d6e1c3dbb145d2d7ac3ba46729340e6d8d40/codex-rs/core/src/agents_md.rs). Codex overrides remain outside GitHub Copilot CLI `@path` import expansion.
 
 ## Focused companion stack
 

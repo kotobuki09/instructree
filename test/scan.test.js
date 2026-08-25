@@ -117,12 +117,104 @@ test("uses configured Codex fallbacks in order after both standard names are abs
 
   const result = await explain("src/app.js", root, {
     client: "codex",
-    fallbackFilenames: ["PROJECT.md", "TEAM.md"],
+    fallbackFilenames: ["AGENTS.md", "PROJECT.md", "PROJECT.md", "TEAM.md"],
   });
 
   assert.deepEqual(result.applicable.map((item) => item.path), ["PROJECT.md"]);
   assert.deepEqual(result.codex.fallbackFilenames, ["PROJECT.md", "TEAM.md"]);
   assert.equal(result.codex.maxBytes, 32768);
+});
+
+test("skips non-file Codex fallback candidates", async (context) => {
+  const root = await fixture({
+    "TEAM.md": "# Team fallback\n",
+    "src/app.js": "export {};\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+  await fs.mkdir(path.join(root, "PROJECT.md"));
+
+  const result = await explain("src/app.js", root, {
+    client: "codex",
+    fallbackFilenames: ["PROJECT.md", "TEAM.md"],
+  });
+
+  assert.deepEqual(result.applicable.map((item) => item.path), ["TEAM.md"]);
+});
+
+test("uses Rust Unicode whitespace semantics for Codex byte accounting", async (context) => {
+  const root = await fixture({
+    "AGENTS.override.md": "\uFEFF",
+    "nested/AGENTS.override.md": "\u0085",
+    "nested/deeper/AGENTS.md": "abc",
+    "nested/deeper/app.js": "export {};\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const result = await explain("nested/deeper/app.js", root, { client: "codex", maxBytes: 5 });
+
+  assert.deepEqual(result.applicable.map((item) => item.path), [
+    "AGENTS.override.md",
+    "nested/AGENTS.override.md",
+    "nested/deeper/AGENTS.md",
+  ]);
+  assert.deepEqual(result.applicable.map((item) => item.includedBytes), [3, 0, 2]);
+  assert.equal(result.applicable[0].empty, false, "a BOM is not Rust Unicode whitespace");
+  assert.equal(result.applicable[1].empty, true, "NEL is Rust Unicode whitespace");
+  assert.equal(result.applicable[2].truncated, true);
+});
+
+test("distinguishes an empty Codex file from a truncated whitespace-only prefix", async (context) => {
+  const root = await fixture({
+    "AGENTS.md": "root",
+    "nested/AGENTS.md": " content after a leading space",
+    "nested/deeper/AGENTS.md": "z",
+    "nested/deeper/app.js": "export {};\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const result = await explain("nested/deeper/app.js", root, { client: "codex", maxBytes: 5 });
+
+  assert.deepEqual(result.applicable.map((item) => item.path), [
+    "AGENTS.md",
+    "nested/AGENTS.md",
+    "nested/deeper/AGENTS.md",
+  ]);
+  assert.deepEqual(
+    result.applicable.map(({ empty, includedEmpty, includedBytes, truncated }) => ({
+      empty,
+      includedEmpty,
+      includedBytes,
+      truncated,
+    })),
+    [
+      { empty: false, includedEmpty: false, includedBytes: 4, truncated: false },
+      { empty: false, includedEmpty: true, includedBytes: 0, truncated: true },
+      { empty: false, includedEmpty: false, includedBytes: 1, truncated: false },
+    ],
+  );
+});
+
+test("refuses Codex project instruction symlinks that escape the repository", async (context) => {
+  const root = await fixture({ "app.js": "export {};\n" });
+  const outside = await fixture({ "outside.md": "private instructions\n" });
+  context.after(() => Promise.all([
+    fs.rm(root, { recursive: true, force: true }),
+    fs.rm(outside, { recursive: true, force: true }),
+  ]));
+  try {
+    await fs.symlink(path.join(outside, "outside.md"), path.join(root, "AGENTS.md"), "file");
+  } catch (error) {
+    if (["EPERM", "EACCES", "ENOSYS"].includes(error.code)) {
+      context.skip("file symlinks are unavailable on this host");
+      return;
+    }
+    throw error;
+  }
+
+  await assert.rejects(
+    () => explain("app.js", root, { client: "codex" }),
+    /resolves outside the repository root/,
+  );
 });
 
 test("applies one combined Codex byte budget and excludes later directories when exhausted", async (context) => {
@@ -163,8 +255,20 @@ test("validates Codex fallback filenames and byte budgets at the API boundary", 
     /repository-local filename/,
   );
   await assert.rejects(
-    () => explain("src/app.js", process.cwd(), { client: "codex", maxBytes: 0 }),
-    /positive integer/,
+    () => explain("src/app.js", process.cwd(), { client: "codex", fallbackFilenames: ["RULES.md:secret"] }),
+    /repository-local filename/,
+  );
+  await assert.rejects(
+    () => explain("src/app.js", process.cwd(), { client: "codex", maxBytes: -1 }),
+    /non-negative integer/,
+  );
+  await assert.rejects(
+    () => explain("src/app.js", process.cwd(), { maxBytes: 0 }),
+    /require client: codex/,
+  );
+  await assert.rejects(
+    () => explain("src/app.js", process.cwd(), { client: "claude" }),
+    /unknown client: claude/,
   );
 });
 

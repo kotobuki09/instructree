@@ -135,6 +135,7 @@ test("explain --client codex exposes repeatable fallbacks and the shared byte bu
   context.after(() => fs.rm(root, { recursive: true, force: true }));
   const output = [];
   const textOutput = [];
+  const zeroBudgetOutput = [];
 
   await run([
     "explain", "src/app.js", "--root", root, "--client", "codex",
@@ -144,6 +145,9 @@ test("explain --client codex exposes repeatable fallbacks and the shared byte bu
     "explain", "src/app.js", "--root", root, "--client", "codex",
     "--fallback", "PROJECT.md", "--max-bytes", "15",
   ], { log: (value) => textOutput.push(value) });
+  await run([
+    "explain", "src/app.js", "--root", root, "--client", "codex", "--max-bytes", "0", "--json",
+  ], { log: (value) => zeroBudgetOutput.push(value) });
   process.exitCode = 0;
 
   const report = JSON.parse(output[0]);
@@ -152,8 +156,13 @@ test("explain --client codex exposes repeatable fallbacks and the shared byte bu
   assert.equal(report.codex.includedBytes, 15);
   assert.deepEqual(report.applicable.map((item) => item.path), ["PROJECT.md", "src/PROJECT.md"]);
   assert.equal(report.applicable[1].truncated, true);
+  assert.equal(report.applicable[1].includedEmpty, false);
   assert.match(textOutput[0], /configuration · fallbacks: PROJECT\.md · max bytes: 15/);
   assert.match(textOutput[0], /2\/12 bytes, truncated/);
+  const zeroBudget = JSON.parse(zeroBudgetOutput[0]);
+  assert.deepEqual(zeroBudget.applicable, []);
+  assert.equal(zeroBudget.codex.maxBytes, 0);
+  assert.equal(zeroBudget.codex.budgetExhausted, true);
 });
 
 test("rejects unsupported --client values and combinations", async () => {
@@ -169,8 +178,8 @@ test("rejects unsupported --client values and combinations", async () => {
     /repository-local filename/,
   );
   await assert.rejects(
-    () => run(["explain", "src/app.js", "--client", "codex", "--max-bytes", "0"]),
-    /positive integer/,
+    () => run(["explain", "src/app.js", "--client", "codex", "--max-bytes", "-1"]),
+    /non-negative integer/,
   );
   await assert.rejects(
     () => run(["explain", "src/app.js", "--fallback", "PROJECT.md"]),

@@ -28,10 +28,12 @@ function isInsideScope(target, scope) {
 
 const CODEX_DEFAULT_MAX_BYTES = 32768;
 const CODEX_STANDARD_FILENAMES = ["AGENTS.override.md", "AGENTS.md"];
+const CODEX_WHITESPACE_ONLY = /^\p{White_Space}*$/u;
 
 function codexConfiguration(options) {
   const fallbackFilenames = options.fallbackFilenames ?? [];
   if (!Array.isArray(fallbackFilenames)) throw new Error("Codex fallbackFilenames must be an array");
+  const normalizedFilenames = [];
   for (const filename of fallbackFilenames) {
     if (
       typeof filename !== "string" ||
@@ -41,17 +43,21 @@ function codexConfiguration(options) {
       filename === ".." ||
       filename.includes("/") ||
       filename.includes("\\") ||
+      filename.includes(":") ||
       filename.includes("\0")
     ) {
       throw new Error(`Codex fallback must be a repository-local filename: ${String(filename)}`);
     }
+    if (!CODEX_STANDARD_FILENAMES.includes(filename) && !normalizedFilenames.includes(filename)) {
+      normalizedFilenames.push(filename);
+    }
   }
 
   const maxBytes = options.maxBytes ?? CODEX_DEFAULT_MAX_BYTES;
-  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0) {
-    throw new Error("Codex maxBytes must be a positive integer");
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
+    throw new Error("Codex maxBytes must be a non-negative integer");
   }
-  return { fallbackFilenames: [...fallbackFilenames], maxBytes };
+  return { fallbackFilenames: normalizedFilenames, maxBytes };
 }
 
 function isInsideRoot(root, candidate) {
@@ -75,7 +81,7 @@ async function firstCodexCandidate(root, realRoot, directory, candidateFilenames
     if (!isInsideRoot(realRoot, realCandidate)) {
       throw new Error(`Codex project instruction resolves outside the repository root: ${relativePath}`);
     }
-    return { relativePath, absolutePath };
+    return { relativePath, absolutePath: realCandidate };
   }
   return null;
 }
@@ -104,8 +110,9 @@ async function codexProjectChain(root, files, relativeTarget, configuration) {
 
     const data = await fs.readFile(selected.absolutePath);
     const included = data.subarray(0, remainingBytes);
-    const empty = included.toString("utf8").trim().length === 0;
-    const includedBytes = empty ? 0 : included.length;
+    const empty = CODEX_WHITESPACE_ONLY.test(data.toString("utf8"));
+    const includedEmpty = CODEX_WHITESPACE_ONLY.test(included.toString("utf8"));
+    const includedBytes = includedEmpty ? 0 : included.length;
     const knownFile = filesByPath.get(selected.relativePath);
     applicable.push({
       path: selected.relativePath,
@@ -116,6 +123,7 @@ async function codexProjectChain(root, files, relativeTarget, configuration) {
       includedBytes,
       truncated: data.length > remainingBytes,
       empty,
+      includedEmpty,
     });
     remainingBytes -= includedBytes;
   }
@@ -133,6 +141,12 @@ async function codexProjectChain(root, files, relativeTarget, configuration) {
 }
 
 export async function explain(target, root = process.cwd(), options = {}) {
+  const hasCodexConfiguration =
+    Object.hasOwn(options, "fallbackFilenames") || Object.hasOwn(options, "maxBytes");
+  if (options.client && options.client !== "codex") throw new Error(`unknown client: ${options.client}`);
+  if (options.client !== "codex" && hasCodexConfiguration) {
+    throw new Error("Codex fallbackFilenames and maxBytes require client: codex");
+  }
   const configuration = options.client === "codex" ? codexConfiguration(options) : null;
   const result = await scan(root);
   const relativeTarget = normalize(path.relative(result.root, path.resolve(result.root, target)));
