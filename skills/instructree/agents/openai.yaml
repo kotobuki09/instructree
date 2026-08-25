@@ -1,0 +1,4 @@
+interface:
+  display_name: "Instructree"
+  short_description: "Audit coding-agent instruction scope and conflicts"
+  default_prompt: "Use $instructree to audit the agent instructions in this repository."

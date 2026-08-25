@@ -92,7 +92,7 @@ export function classify(relativePath) {
   }
   if (
     basename === "SKILL.md" &&
-    [".agents/skills/", ".claude/skills/", ".github/skills/"].some((prefix) => lower.startsWith(prefix))
+    ["skills/", ".agents/skills/", ".claude/skills/", ".github/skills/"].some((prefix) => lower.startsWith(prefix))
   ) {
     return { family: "Skills", kind: "skill", scope: directory, patternKey: null };
   }

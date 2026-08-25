@@ -2,6 +2,12 @@
 
 All notable changes to Instructree are documented here.
 
+## 0.3.0 — 2026-08-26
+
+- Add a native Instructree skill for Codex and compatible coding agents.
+- Discover distributable skills stored under top-level `skills/` directories.
+- Document a focused, reproducible Codex engineering and launch setup.
+
 ## 0.2.0 — 2026-08-25
 
 - Add recursive GitHub Copilot CLI `@path` import graphs.

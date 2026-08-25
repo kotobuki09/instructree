@@ -1,6 +1,6 @@
 {
   "name": "instructree",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Map and lint the instructions your AI coding agents will actually use.",
   "type": "module",
   "bin": {
@@ -12,6 +12,7 @@
   "files": [
     "bin",
     "src",
+    "skills",
     "CHANGELOG.md",
     "LICENSE",
     "README.md"
@@ -26,6 +27,7 @@
     "claude-md",
     "copilot-instructions",
     "agent-skills",
+    "codex",
     "coding-agents",
     "linter",
     "cli"

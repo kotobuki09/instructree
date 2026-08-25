@@ -37,6 +37,14 @@ npm install --global github:kotobuki09/instructree
 instructree
 ```
 
+Install the native skill for Codex and other compatible agents:
+
+```bash
+npx skills add kotobuki09/instructree --skill instructree -g --agent codex
+```
+
+Then ask: `Use $instructree to audit the agent instructions in this repository.` See the focused [Codex setup](docs/codex-setup.md) for the companion engineering and launch skills used to develop this project.
+
 ## What it catches
 
 - malformed or incomplete frontmatter in skills, custom agents, and agentic workflows;
@@ -56,7 +64,7 @@ It prints stable file-and-line diagnostics and exits nonzero for schema errors, 
 | Cross-agent | `AGENTS.md` at any depth | Directory scope |
 | Claude | `CLAUDE.md`, `CLAUDE.local.md`, `.claude/rules/*.md` | Directory scope or `paths` |
 | GitHub Copilot | `.github/copilot-instructions.md`, `*.instructions.md`, recursive `@path` imports | Repository scope, `applyTo`, and effective import graph |
-| Agent Skills | `.agents/skills/*/SKILL.md`, `.claude/skills/*/SKILL.md`, `.github/skills/*/SKILL.md` | Listed as on demand |
+| Agent Skills | `skills/*/SKILL.md`, `.agents/skills/*/SKILL.md`, `.claude/skills/*/SKILL.md`, `.github/skills/*/SKILL.md` | Listed as on demand |
 | Custom agents | `.github/agents/*.agent.md` | Listed as on demand |
 | Agentic Workflows | `.github/workflows/*.md` | Metadata validation |
 | Other agents | `GEMINI.md`, `.cursor/rules/*.mdc`, `.windsurf/rules/*.md` | Directory scope or `globs` |
