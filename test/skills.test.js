@@ -37,6 +37,7 @@ test("audits Codex user and repository skill scopes without exposing absolute pa
   assert.equal(result.repository.currentDirectory, "nested/deep");
   assert.deepEqual(result.scopes.map((scope) => scope.path), [
     "~/.agents/skills",
+    "~/.codex/skills",
     "nested/deep/.agents/skills",
     "nested/.agents/skills",
     ".agents/skills",
@@ -285,6 +286,7 @@ test("skills CLI emits deterministic JSON and exposes the audit in help", async 
   await assert.rejects(() => run(["skills", cwd, "--all", "--json"]), /--all and --json cannot be used together/);
   assert.deepEqual(JSON.parse(first[0]).provenance.limitations, [
     "Does not include Codex admin or system skills.",
+    "Audits the default deprecated ~/.codex/skills location; a custom CODEX_HOME is not resolved.",
     "Reads only supported skill settings from user ~/.codex/config.toml; session flags and project config are not applied.",
     "Uses the nearest .git marker rather than configured Codex project-root markers.",
     "Reports user-configured candidate state, not the exact skills loaded after plugins, product restrictions, or session overrides.",
@@ -387,4 +389,44 @@ test("reports an existing non-directory scope in JSON and text", async (context)
   process.exitCode = 0;
   assert.match(output[0], /scan errors/);
   assert.match(output[0], /skill scope exists but is not a directory/);
+});
+
+test("audits canonical and deprecated Codex user skill roots", async (context) => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "instructree-skills-user-roots-"));
+  const repository = path.join(temporary, "repo");
+  const home = path.join(temporary, "home");
+  await writeFiles(repository, { ".git/HEAD": "ref: refs/heads/main\n" });
+  await writeFiles(home, {
+    ".agents/skills/shared/SKILL.md": "---\nname: shared\ndescription: Canonical user skill.\n---\n",
+    ".agents/skills/dual/SKILL.md": "---\nname: dual\ndescription: Canonical duplicate.\n---\n",
+    ".codex/skills/legacy/SKILL.md": "---\nname: legacy\ndescription: Deprecated user skill.\n---\n",
+    ".codex/skills/dual/SKILL.md": "---\nname: dual\ndescription: Deprecated duplicate.\n---\n",
+    ".codex/skills/.system/bundled/SKILL.md": "---\nname: bundled\ndescription: System skill.\n---\n",
+  });
+  context.after(() => fs.rm(temporary, { recursive: true, force: true }));
+
+  const result = await auditCodexSkills(repository, home);
+  assert.deepEqual(result.scopes.slice(0, 2).map((scope) => ({ path: scope.path, variant: scope.variant })), [
+    { path: "~/.agents/skills", variant: "shared" },
+    { path: "~/.codex/skills", variant: "legacy" },
+  ]);
+  assert.deepEqual(result.skills.map((skill) => skill.path), [
+    "~/.agents/skills/dual/SKILL.md",
+    "~/.agents/skills/shared/SKILL.md",
+    "~/.codex/skills/dual/SKILL.md",
+    "~/.codex/skills/legacy/SKILL.md",
+  ]);
+  assert.equal(result.skills.some((skill) => skill.name === "bundled"), false);
+  assert.equal(result.duplicates[0].name, "dual");
+  assert.equal(result.duplicates[0].crossScope, true);
+  assert.deepEqual(result.duplicates[0].occurrences.map((item) => item.scopePath), [
+    "~/.agents/skills",
+    "~/.codex/skills",
+  ]);
+  assert.match(result.provenance.implementationSource, /75cb7c903d474b6637a6e9fe6f76cedf76ef1472/);
+
+  const output = [];
+  assert.equal(await run(["skills", repository, "--home", home, "--all"], { log: (value) => output.push(value) }), 0);
+  assert.match(output.join("\n"), /legacy user scope · ~\/\.codex\/skills/);
+  assert.equal(output.join("\n").includes(temporary), false);
 });

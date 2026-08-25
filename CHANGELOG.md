@@ -4,6 +4,8 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+- Audit both the shared `~/.agents/skills` user root and Codex's deprecated `~/.codex/skills` compatibility root, while keeping their provenance distinct and excluding hidden system descendants.
+
 ## 0.18.0 — 2026-08-26
 
 - Add `instructree starter [cwd]` for a read-only readiness audit of a focused, source-grounded Codex engineering stack, with install commands only for missing companions.

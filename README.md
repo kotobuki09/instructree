@@ -67,7 +67,7 @@ Audit Codex user and repository-local skill candidate scopes plus supported user
 instructree skills . --client codex
 ```
 
-The default report keeps scope counts and every actionable finding concise. It reads supported skill settings from user `~/.codex/config.toml` to explain disabled candidates, later-rule precedence, unmatched selectors, catalog injection, bundled skills, and the configured context cap. Add `--all` for the complete human-readable inventory or `--json` for the full structured result.
+The default report keeps scope counts and every actionable finding concise. It audits the shared `~/.agents/skills` user root plus Codex's deprecated `~/.codex/skills` compatibility root, keeping their provenance distinct so installer mismatches and cross-root duplicates are visible. It reads supported skill settings from user `~/.codex/config.toml` to explain disabled candidates, later-rule precedence, unmatched selectors, catalog injection, bundled skills, and the configured context cap. Add `--all` for the complete human-readable inventory or `--json` for the full structured result. The [pinned root-compatibility note](docs/research/codex-user-skill-roots.md) documents the source and the custom `CODEX_HOME` limitation.
 
 Install from GitHub if you want the command everywhere:
 
@@ -93,6 +93,7 @@ If Instructree catches a stale or conflicting agent instruction before your next
 - malformed or incomplete frontmatter in skills, custom agents, and agentic workflows;
 - UTF-8 BOM-prefixed `SKILL.md` frontmatter that [current Codex versions may misreport as missing](docs/research/codex-skill-utf8-bom.md);
 - disabled candidates, unmatched selectors, and unsupported relevant syntax in user `~/.codex/config.toml` skill settings;
+- user skills split between the shared `~/.agents/skills` root and Codex's deprecated default `~/.codex/skills` compatibility root;
 - Codex project-root markers, fallback filenames, byte budgets, user instructions, and project instruction chains in one redacted pre-session report;
 - ignored parent instructions hidden by a nearer Codex project-root marker, with redacted ancestor labels and the outer marker that explains the boundary;
 - duplicate skill names across `.agents`, `.claude`, and `.github`;

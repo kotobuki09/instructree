@@ -6,6 +6,7 @@ import { CODEX_SKILL_UTF8_BOM_MESSAGE, parseFrontmatter } from "./frontmatter.js
 const CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS = 8000;
 const CODEX_MAX_SCAN_DEPTH = 6;
 const CODEX_SKILLS_SOURCE = "https://developers.openai.com/codex/skills";
+const CODEX_SKILLS_IMPLEMENTATION_SOURCE = "https://github.com/openai/codex/blob/75cb7c903d474b6637a6e9fe6f76cedf76ef1472/codex-rs/ext/skills/src/host_roots.rs#L80-L112";
 
 function normalize(relativePath) {
   return relativePath.split(path.sep).join("/");
@@ -36,12 +37,12 @@ export async function findCodexProjectRoot(start, markers = [".git"]) {
 }
 
 function displaySkillPath(scope, relativePath) {
-  if (scope.kind === "user") return `~/.agents/skills/${relativePath}`;
+  if (scope.kind === "user") return `${scope.displayRoot}/${relativePath}`;
   return normalize(path.relative(scope.repositoryRoot, path.join(scope.absoluteRoot, relativePath)));
 }
 
 function scopePath(scope) {
-  if (scope.kind === "user") return "~/.agents/skills";
+  if (scope.kind === "user") return scope.displayRoot;
   const relative = normalize(path.relative(scope.repositoryRoot, scope.absoluteRoot));
   return relative || ".agents/skills";
 }
@@ -195,6 +196,7 @@ async function discoverScope(scope, seenCanonicalSkillTargets) {
         ...metadataReport(scope, relativePath, content),
         absolutePath: canonicalSkillFile,
         scope: scope.kind,
+        scopeVariant: scope.variant ?? null,
         scopeDirectory: scopeDirectory(scope),
         scopePath: scopePath(scope),
         order: scope.order,
@@ -282,6 +284,8 @@ function duplicateReports(skills) {
     if (!byName.has(skill.name)) byName.set(skill.name, []);
     byName.get(skill.name).push({
       scope: skill.scope,
+      scopeVariant: skill.scopeVariant,
+      scopePath: skill.scopePath,
       scopeDirectory: skill.scopeDirectory,
       path: skill.path,
       line: skill.metadata.nameLine,
@@ -292,7 +296,7 @@ function duplicateReports(skills) {
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([name, occurrences]) => ({
       name,
-      crossScope: new Set(occurrences.map((item) => `${item.scope}:${item.scopeDirectory ?? ""}`)).size > 1,
+      crossScope: new Set(occurrences.map((item) => `${item.scope}:${item.scopePath}:${item.scopeDirectory ?? ""}`)).size > 1,
       occurrences,
       message: `possible duplicate skill name '${name}' across Codex skill scopes`,
     }));
@@ -327,10 +331,22 @@ export async function auditCodexSkills(
 
   const scopes = [];
   if (home) {
+    const absoluteHome = path.resolve(home);
     scopes.push({
       kind: "user",
+      variant: "shared",
+      displayRoot: "~/.agents/skills",
       order: 0,
-      absoluteRoot: path.join(path.resolve(home), ".agents", "skills"),
+      absoluteRoot: path.join(absoluteHome, ".agents", "skills"),
+      absoluteDirectory: null,
+      repositoryRoot,
+    });
+    scopes.push({
+      kind: "user",
+      variant: "legacy",
+      displayRoot: "~/.codex/skills",
+      order: 1,
+      absoluteRoot: path.join(absoluteHome, ".codex", "skills"),
       absoluteDirectory: null,
       repositoryRoot,
     });
@@ -338,7 +354,7 @@ export async function auditCodexSkills(
   repositoryDirectories.forEach((absoluteDirectory, index) => {
     scopes.push({
       kind: "repository",
-      order: index + 1,
+      order: index + 2,
       absoluteRoot: path.join(absoluteDirectory, ".agents", "skills"),
       absoluteDirectory,
       repositoryRoot,
@@ -354,6 +370,7 @@ export async function auditCodexSkills(
     const publicSkills = result.skills.map(withoutOrder);
     scannedScopes.push({
       scope: scope.kind,
+      variant: scope.variant ?? null,
       directory: scopeDirectory(scope),
       path: scopePath(scope),
       candidate: true,
@@ -470,9 +487,11 @@ export async function auditCodexSkills(
     scanErrors,
     provenance: {
       source: CODEX_SKILLS_SOURCE,
-      scopeModel: "user ~/.agents/skills plus .agents/skills from the current directory to the repository root",
+      implementationSource: CODEX_SKILLS_IMPLEMENTATION_SOURCE,
+      scopeModel: "user ~/.agents/skills, deprecated user ~/.codex/skills, plus .agents/skills from the current directory to the repository root",
       limitations: [
         "Does not include Codex admin or system skills.",
+        "Audits the default deprecated ~/.codex/skills location; a custom CODEX_HOME is not resolved.",
         "Reads only supported skill settings from user ~/.codex/config.toml; session flags and project config are not applied.",
         options.projectRootMarkers
           ? "Uses supported user project-root markers; managed configuration and session overrides are not applied."

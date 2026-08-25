@@ -151,7 +151,9 @@ export function formatSkills(result, { showAll = false } = {}) {
     "",
   ];
   for (const scope of result.scopes) {
-    const label = scope.scope === "user" ? "user scope" : `repository scope · ${scope.directory}`;
+    const label = scope.scope === "user"
+      ? scope.variant === "legacy" ? "legacy user scope" : "user scope"
+      : `repository scope · ${scope.directory}`;
     lines.push(cyan(`${label} · ${scope.path}`));
     if (!scope.exists) lines.push(dim("└─ not present"));
     else if (!scope.isDirectory) lines.push(red("└─ not a directory"));

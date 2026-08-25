@@ -95,3 +95,19 @@ test("starter CLI emits deterministic JSON and rejects unrelated options", async
   await assert.rejects(() => run(["starter", repository, "--strict"], { log() {} }), /starter does not accept --strict/);
   await assert.rejects(() => run(["starter", repository, "--client", "codex"], { log() {} }), /--client can only be used with explain or skills/);
 });
+
+test("starter recognizes a companion installed only in the deprecated Codex user root", async (context) => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "instructree-starter-legacy-"));
+  const repository = path.join(temporary, "repo");
+  const home = path.join(temporary, "home");
+  await writeFiles(repository, { ".git/HEAD": "ref: refs/heads/main\n" });
+  await writeFiles(home, {
+    ".codex/skills/research/SKILL.md": "---\nname: research\ndescription: Legacy-installed research helper.\n---\n",
+  });
+  context.after(() => fs.rm(temporary, { recursive: true, force: true }));
+
+  const result = await auditCodexStarter(repository, home);
+  const research = result.companions.find((item) => item.name === "research");
+  assert.equal(research.status, "ready");
+  assert.deepEqual(research.candidates.map((item) => item.path), ["~/.codex/skills/research/SKILL.md"]);
+});
