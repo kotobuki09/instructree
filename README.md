@@ -73,6 +73,7 @@ If Instructree catches a stale or conflicting agent instruction before your next
 ## What it catches
 
 - malformed or incomplete frontmatter in skills, custom agents, and agentic workflows;
+- UTF-8 BOM-prefixed `SKILL.md` frontmatter that [current Codex versions may misreport as missing](docs/research/codex-skill-utf8-bom.md);
 - duplicate skill names across `.agents`, `.claude`, and `.github`;
 - skill names that do not use portable kebab-case or match their folder, with nested namespace prefixes supported;
 - broken relative Markdown links inside agent instruction files;

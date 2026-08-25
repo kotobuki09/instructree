@@ -359,6 +359,27 @@ test("validates skill metadata and broken local links", async (context) => {
   );
 });
 
+test("reports a Codex-incompatible UTF-8 BOM on skills without cascading metadata errors", async (context) => {
+  const root = await fixture({
+    ".agents/skills/bom-skill/SKILL.md": "\uFEFF---\r\nname: bom-skill\r\ndescription: Valid metadata behind a BOM.\r\n---\r\n# Body\r\n",
+    ".agents/skills/body-marker/SKILL.md": "---\nname: body-marker\ndescription: BOM only in the body.\n---\n# Body \uFEFF marker\n",
+    ".github/agents/bom.agent.md": "\uFEFF---\ndescription: Non-skill frontmatter.\n---\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const result = await scan(root);
+  const bomFile = result.files.find((file) => file.path.endsWith("bom-skill/SKILL.md"));
+  const bomDiagnostics = result.diagnostics.filter((item) => item.file.endsWith("bom-skill/SKILL.md"));
+
+  assert.equal(bomFile.frontmatter.data.name, "bom-skill");
+  assert.equal(bomFile.frontmatter.data.description, "Valid metadata behind a BOM.");
+  assert.deepEqual(bomDiagnostics.map((item) => item.code), ["E005"]);
+  assert.match(bomDiagnostics[0].message, /UTF-8 BOM/);
+  assert.match(bomDiagnostics[0].message, /without BOM/);
+  assert.equal(result.diagnostics.some((item) => item.file.endsWith("body-marker/SKILL.md")), false);
+  assert.equal(result.diagnostics.some((item) => item.file.endsWith("bom.agent.md")), false);
+});
+
 test("ignores links and directives inside fenced examples", async (context) => {
   const root = await fixture({
     ".github/instructions/base.instructions.md": "---\napplyTo: '**/*.ts'\n---\nAlways use tabs.\n",

@@ -60,10 +60,16 @@ function parseBlockScalar(lines, start, end, indicator) {
   return { value, nextIndex: index - 1 };
 }
 
+export const CODEX_SKILL_UTF8_BOM_MESSAGE =
+  "UTF-8 BOM before skill frontmatter is not supported by current Codex versions; save the file as UTF-8 without BOM";
+
 export function parseFrontmatter(content) {
-  const lines = content.replace(/\r\n/g, "\n").split("\n");
+  const normalized = content.replace(/\r\n/g, "\n");
+  const utf8Bom = normalized.startsWith("\uFEFF");
+  const lines = normalized.split("\n");
   if (lines[0]?.trim() !== "---") {
     return {
+      utf8Bom,
       present: false,
       data: {},
       keyLines: {},
@@ -76,6 +82,7 @@ export function parseFrontmatter(content) {
   const end = lines.findIndex((line, index) => index > 0 && line.trim() === "---");
   if (end === -1) {
     return {
+      utf8Bom,
       present: true,
       data: {},
       keyLines: {},
@@ -132,6 +139,7 @@ export function parseFrontmatter(content) {
   }
 
   return {
+    utf8Bom,
     present: true,
     data,
     keyLines,

@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { parseFrontmatter } from "./frontmatter.js";
+import { CODEX_SKILL_UTF8_BOM_MESSAGE, parseFrontmatter } from "./frontmatter.js";
 
 const CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS = 8000;
 const CODEX_MAX_SCAN_DEPTH = 6;
@@ -55,12 +55,21 @@ function metadataReport(scope, relativePath, content) {
   const parsed = parseFrontmatter(content);
   const name = textValue(parsed.data.name);
   const description = textValue(parsed.data.description);
-  const failures = parsed.errors.map((error) => ({
+  const failures = [];
+  if (parsed.present && parsed.utf8Bom) {
+    failures.push({
+      code: "unsupported-utf8-bom",
+      field: "frontmatter",
+      line: 1,
+      message: CODEX_SKILL_UTF8_BOM_MESSAGE,
+    });
+  }
+  failures.push(...parsed.errors.map((error) => ({
     code: "malformed-frontmatter",
     field: null,
     line: error.line,
     message: error.message,
-  }));
+  })));
 
   if (!parsed.present) {
     failures.push({

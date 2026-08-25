@@ -76,6 +76,24 @@ test("labels an overlong approximate initial list against the unknown-window ref
   assert.ok(result.pressure.estimatedInitialListChars > result.pressure.unknownContextWindowReferenceChars);
 });
 
+test("reports one precise metadata failure for a BOM-prefixed Codex skill", async (context) => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "instructree-skills-bom-"));
+  const repository = path.join(temporary, "repo");
+  const home = path.join(temporary, "home");
+  await writeFiles(repository, {
+    ".git/HEAD": "ref: refs/heads/main\n",
+    ".agents/skills/bom-skill/SKILL.md": "\uFEFF---\nname: bom-skill\ndescription: Valid metadata behind a BOM.\n---\n",
+  });
+  context.after(() => fs.rm(temporary, { recursive: true, force: true }));
+
+  const result = await auditCodexSkills(repository, home);
+  assert.equal(result.skills[0].name, "bom-skill");
+  assert.equal(result.skills[0].description, "Valid metadata behind a BOM.");
+  assert.deepEqual(result.metadataFailures.map((item) => item.code), ["unsupported-utf8-bom"]);
+  assert.match(result.metadataFailures[0].message, /UTF-8 BOM/);
+  assert.match(result.metadataFailures[0].message, /without BOM/);
+});
+
 test("skills CLI emits deterministic JSON and exposes the audit in help", async (context) => {
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "instructree-skills-cli-"));
   const repository = path.join(temporary, "repo");

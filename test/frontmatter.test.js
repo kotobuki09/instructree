@@ -26,6 +26,17 @@ test("reports an unclosed frontmatter block", () => {
   assert.match(parsed.errors[0].message, /closing/);
 });
 
+test("parses frontmatter behind a leading UTF-8 BOM and exposes the marker", () => {
+  const parsed = parseFrontmatter("\uFEFF---\r\nname: bom-skill\r\ndescription: Valid metadata.\r\n---\r\nBody\r\n");
+
+  assert.equal(parsed.present, true);
+  assert.equal(parsed.utf8Bom, true);
+  assert.equal(parsed.data.name, "bom-skill");
+  assert.equal(parsed.data.description, "Valid metadata.");
+  assert.equal(parsed.errors.length, 0);
+  assert.equal(parsed.body, "Body\n");
+});
+
 test("parses folded and literal YAML block scalars", () => {
   const folded = parseFrontmatter(`---
 name: block-scalar

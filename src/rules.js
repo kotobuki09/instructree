@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { listValue, parseFrontmatter } from "./frontmatter.js";
+import { CODEX_SKILL_UTF8_BOM_MESSAGE, listValue, parseFrontmatter } from "./frontmatter.js";
 
 function diagnostic(file, severity, code, line, message) {
   return { file: file.path, severity, code, line, message };
@@ -13,9 +13,13 @@ function isNestedCatalogSkill(filePath) {
 }
 
 function validateFrontmatter(file, parsed) {
-  const diagnostics = parsed.errors.map((error) =>
+  const diagnostics = [];
+  if (file.kind === "skill" && parsed.present && parsed.utf8Bom) {
+    diagnostics.push(diagnostic(file, "error", "E005", 1, CODEX_SKILL_UTF8_BOM_MESSAGE));
+  }
+  diagnostics.push(...parsed.errors.map((error) =>
     diagnostic(file, "error", "E001", error.line, error.message),
-  );
+  ));
   if (parsed.errors.length > 0) return diagnostics;
 
   if (["skill", "agent", "workflow"].includes(file.kind) && !parsed.present) {

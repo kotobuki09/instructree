@@ -6,6 +6,7 @@ const RULES = [
   ["E002", "missing-frontmatter", "Required YAML frontmatter is missing", "error", "high"],
   ["E003", "missing-required-field", "A required frontmatter field is missing", "error", "high"],
   ["E004", "invalid-skill-name", "The skill name is not portable kebab-case", "error", "high"],
+  ["E005", "unsupported-skill-encoding", "A skill uses a Codex-incompatible text encoding", "error", "high"],
   ["W101", "mismatched-skill-name", "The skill name does not match its folder", "warning", "high"],
   ["I101", "unscoped-instruction", "The instruction file has no automatic path scope", "note", "high"],
   ["W201", "invalid-link-encoding", "A local Markdown link has invalid encoding", "warning", "high"],
