@@ -15,6 +15,26 @@ async function fixture(files) {
   return root;
 }
 
+test("init creates a GitHub Actions workflow without overwriting it", async (context) => {
+  const root = await fixture({});
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+  const output = [];
+
+  const exitCode = await run(["init", root], { log: (value) => output.push(value) });
+  const workflowPath = path.join(root, ".github", "workflows", "instructree.yml");
+  const workflow = await fs.readFile(workflowPath, "utf8");
+
+  assert.equal(exitCode, 0);
+  assert.equal(output[0], "created .github/workflows/instructree.yml");
+  assert.match(workflow, /^name: instruction-lint$/m);
+  assert.match(workflow, /uses: kotobuki09\/instructree@v0\.7\.0/);
+  assert.match(workflow, /strict: true/);
+
+  await fs.writeFile(workflowPath, "# keep me\n");
+  await assert.rejects(() => run(["init", root]), /workflow already exists/);
+  assert.equal(await fs.readFile(workflowPath, "utf8"), "# keep me\n");
+});
+
 test("imports command reports only import-policy failures", async (context) => {
   const root = await fixture({
     ".agents/skills/broken/SKILL.md": "# Missing frontmatter\n",

@@ -25,6 +25,12 @@ No install or API key:
 npx --yes github:kotobuki09/instructree
 ```
 
+Add the same audit to every pull request without copying workflow YAML:
+
+```bash
+npx --yes github:kotobuki09/instructree init
+```
+
 Ask what may apply to one file:
 
 ```bash
@@ -103,6 +109,7 @@ The formats are grounded in the current [VS Code custom-instructions documentati
 instructree [scan] [root] [--json | --sarif] [--strict]
 instructree imports [root] [--json] [--strict]
 instructree explain <file> [--root <root>] [--effective] [--json]
+instructree init [root]
 instructree --help | --version
 ```
 
@@ -126,6 +133,9 @@ instructree explain packages/api/src/routes.ts --effective
 
 # Audit the transitive Copilot import graph
 instructree imports --json
+
+# Create .github/workflows/instructree.yml without overwriting an existing file
+instructree init
 ```
 
 Exit codes are `0` for a passing policy, `1` for diagnostics that fail the selected policy, and `2` for invalid arguments or runtime errors.
@@ -141,12 +151,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: kotobuki09/instructree@v0.6.0
+      - uses: kotobuki09/instructree@v0.7.0
         with:
           strict: true
 ```
 
-The action runs directly on Node 24, needs no dependency-install step, and turns diagnostics into file-and-line annotations. Set `root` to scan one repository subdirectory.
+`instructree init` creates this workflow and refuses to overwrite an existing file. The action runs directly on Node 24, needs no dependency-install step, and turns diagnostics into file-and-line annotations. Set `root` to scan one repository subdirectory.
 
 For code scanning, run the CLI with `--sarif` and upload `instructree.sarif` with GitHub's [`upload-sarif` action](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github). SARIF keeps the normal exit policy: errors fail, and warnings fail only with `--strict`.
 
