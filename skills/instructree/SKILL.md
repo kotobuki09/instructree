@@ -1,6 +1,7 @@
 ---
 name: instructree
 description: Map, explain, and lint repository-scoped coding-agent instructions. Use when auditing AGENTS.md, CLAUDE.md, Copilot instructions, agent skills, custom agents, or instruction conflicts before changing code.
+license: MIT
 metadata:
   short-description: Audit coding-agent instruction scope
 ---
