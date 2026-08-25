@@ -15,7 +15,7 @@ Use Instructree to establish which instruction files exist, which may apply to a
 Work from the repository root. Prefer an already installed `instructree` command or the checked-out package's local binary. If neither is available, ask before downloading executable packages, then use the pinned release:
 
 ```bash
-npx github:kotobuki09/instructree#170468a8082c32f97c0299974b044f9be002f053 scan .
+npx github:kotobuki09/instructree#9694f8d9d9af968acbfdb718cb1ef2fc6de2d47c scan .
 ```
 
 Do not add `--yes` unless the user has authorized non-interactive package downloads.
@@ -25,6 +25,7 @@ Choose the narrowest command that answers the request:
 - `instructree scan . --json` inventories supported files and emits stable diagnostics.
 - `instructree explain <file> --root .` shows instructions that may apply to one target.
 - `instructree explain <file> --root . --client codex` selects the Codex repository project-instruction chain.
+- Add repeatable `--fallback <filename>` values and `--max-bytes <n>` when the Codex project configuration uses non-default fallbacks or byte limits.
 - `instructree explain <file> --root . --effective` includes recursive Copilot CLI imports.
 - `instructree imports . --json` audits the recursive `@path` graph.
 - `instructree scan . --sarif` emits SARIF 2.1.0 for code-scanning integrations.
