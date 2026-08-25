@@ -13,7 +13,7 @@ function usage() {
 Usage:
   instructree [scan] [root] [--json | --sarif] [--strict]
   instructree imports [root] [--json] [--strict]
-  instructree explain <file> [--root <root>] [--client codex | --effective] [--json]
+  instructree explain <file> [--root <root>] [--client codex [--fallback <name>]... [--max-bytes <n>] | --effective] [--json]
   instructree init [root] [--code-scanning]
   instructree --help | --version
 
@@ -31,6 +31,8 @@ function parseArguments(argv) {
     strict: false,
     effective: false,
     client: null,
+    fallbackFilenames: [],
+    maxBytes: null,
     codeScanning: false,
     root: null,
     target: null,
@@ -46,6 +48,19 @@ function parseArguments(argv) {
       options.client = argv[index + 1];
       index += 1;
       if (!options.client || options.client.startsWith("-")) throw new Error("--client requires a value");
+    }
+    else if (argument === "--fallback") {
+      const filename = argv[index + 1];
+      index += 1;
+      if (!filename || filename.startsWith("-")) throw new Error("--fallback requires a filename");
+      options.fallbackFilenames.push(filename);
+    }
+    else if (argument === "--max-bytes") {
+      const value = argv[index + 1];
+      index += 1;
+      if (!value || !/^[1-9]\d*$/.test(value)) throw new Error("--max-bytes requires a positive integer");
+      options.maxBytes = Number(value);
+      if (!Number.isSafeInteger(options.maxBytes)) throw new Error("--max-bytes requires a positive integer");
     }
     else if (argument === "--code-scanning") options.codeScanning = true;
     else if (argument === "--root") {
@@ -79,6 +94,12 @@ function parseArguments(argv) {
   }
   if (options.effective && options.client) {
     throw new Error("--effective and --client cannot be used together");
+  }
+  if ((options.fallbackFilenames.length > 0 || options.maxBytes !== null) && options.command !== "explain") {
+    throw new Error("--fallback and --max-bytes require explain --client codex");
+  }
+  if ((options.fallbackFilenames.length > 0 || options.maxBytes !== null) && options.client !== "codex") {
+    throw new Error("--fallback and --max-bytes require --client codex");
   }
   if (options.json && options.sarif) {
     throw new Error("--json and --sarif cannot be used together");
@@ -198,6 +219,7 @@ function jsonResult(result, command) {
     {
       root: result.root,
       ...(result.client ? { client: result.client, profile: result.profile } : {}),
+      ...(result.codex ? { codex: result.codex } : {}),
       ...(result.target ? { target: result.target, applicable: result.applicable, available: result.available } : {}),
       ...(result.target ? { effective: result.effective } : {}),
       files: result.files.map(({ absolutePath, content, frontmatter, ...file }) => file),
@@ -230,7 +252,11 @@ export async function run(argv, io = console) {
 
   const result =
     options.command === "explain"
-      ? await explain(options.target, options.root ?? process.cwd(), { client: options.client })
+      ? await explain(options.target, options.root ?? process.cwd(), {
+          client: options.client,
+          fallbackFilenames: options.fallbackFilenames,
+          ...(options.maxBytes === null ? {} : { maxBytes: options.maxBytes }),
+        })
       : await scan(options.root);
   const sarif = options.sarif
     ? formatSarif(result, JSON.parse(await fs.readFile(packagePath, "utf8")).version)

@@ -97,10 +97,75 @@ test("explains the Codex project chain with override precedence through the targ
   assert.equal(result.profile, "codex");
   assert.deepEqual(
     result.applicable.map((item) => item.path),
-    ["AGENTS.override.md", "packages/AGENTS.md", "packages/api/AGENTS.override.md", "packages/api/src/AGENTS.md"],
+    ["AGENTS.override.md", "packages/AGENTS.override.md", "packages/api/AGENTS.override.md", "packages/api/src/AGENTS.md"],
   );
+  assert.equal(result.applicable[0].includedBytes, Buffer.byteLength("# Root override\n"));
+  assert.equal(result.applicable[1].empty, true);
+  assert.equal(result.applicable[1].includedBytes, 0);
+  assert.equal(result.applicable[3].path, "packages/api/src/AGENTS.md");
   assert.deepEqual(result.available, []);
   assert.deepEqual(result.effective, []);
+});
+
+test("uses configured Codex fallbacks in order after both standard names are absent", async (context) => {
+  const root = await fixture({
+    "PROJECT.md": "# First fallback\n",
+    "TEAM.md": "# Second fallback\n",
+    "src/app.js": "export {};\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const result = await explain("src/app.js", root, {
+    client: "codex",
+    fallbackFilenames: ["PROJECT.md", "TEAM.md"],
+  });
+
+  assert.deepEqual(result.applicable.map((item) => item.path), ["PROJECT.md"]);
+  assert.deepEqual(result.codex.fallbackFilenames, ["PROJECT.md", "TEAM.md"]);
+  assert.equal(result.codex.maxBytes, 32768);
+});
+
+test("applies one combined Codex byte budget and excludes later directories when exhausted", async (context) => {
+  const root = await fixture({
+    "AGENTS.md": "root",
+    "nested/AGENTS.md": "abcdef",
+    "nested/deeper/AGENTS.md": "later",
+    "nested/deeper/app.js": "export {};\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const result = await explain("nested/deeper/app.js", root, { client: "codex", maxBytes: 7 });
+
+  assert.deepEqual(result.applicable.map((item) => item.path), ["AGENTS.md", "nested/AGENTS.md"]);
+  assert.deepEqual(
+    result.applicable.map(({ bytes, includedBytes, truncated }) => ({ bytes, includedBytes, truncated })),
+    [
+      { bytes: 4, includedBytes: 4, truncated: false },
+      { bytes: 6, includedBytes: 3, truncated: true },
+    ],
+  );
+  assert.deepEqual(result.codex, {
+    fallbackFilenames: [],
+    maxBytes: 7,
+    includedBytes: 7,
+    truncated: true,
+    budgetExhausted: true,
+  });
+});
+
+test("validates Codex fallback filenames and byte budgets at the API boundary", async () => {
+  await assert.rejects(
+    () => explain("src/app.js", process.cwd(), { client: "codex", fallbackFilenames: ["../RULES.md"] }),
+    /repository-local filename/,
+  );
+  await assert.rejects(
+    () => explain("src/app.js", process.cwd(), { client: "codex", fallbackFilenames: ["docs\\RULES.md"] }),
+    /repository-local filename/,
+  );
+  await assert.rejects(
+    () => explain("src/app.js", process.cwd(), { client: "codex", maxBytes: 0 }),
+    /positive integer/,
+  );
 });
 
 test("discovers skills stored as direct children of a catalog root", async (context) => {

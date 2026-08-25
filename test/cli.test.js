@@ -126,6 +126,36 @@ test("explain --client codex emits profile metadata without changing neutral JSO
   assert.deepEqual(neutral.applicable.map((item) => item.path), ["AGENTS.md", "AGENTS.override.md"]);
 });
 
+test("explain --client codex exposes repeatable fallbacks and the shared byte budget", async (context) => {
+  const root = await fixture({
+    "PROJECT.md": "project rules",
+    "src/PROJECT.md": "source rules",
+    "src/app.js": "export {};\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+  const output = [];
+  const textOutput = [];
+
+  await run([
+    "explain", "src/app.js", "--root", root, "--client", "codex",
+    "--fallback", "TEAM.md", "--fallback", "PROJECT.md", "--max-bytes", "15", "--json",
+  ], { log: (value) => output.push(value) });
+  await run([
+    "explain", "src/app.js", "--root", root, "--client", "codex",
+    "--fallback", "PROJECT.md", "--max-bytes", "15",
+  ], { log: (value) => textOutput.push(value) });
+  process.exitCode = 0;
+
+  const report = JSON.parse(output[0]);
+  assert.deepEqual(report.codex.fallbackFilenames, ["TEAM.md", "PROJECT.md"]);
+  assert.equal(report.codex.maxBytes, 15);
+  assert.equal(report.codex.includedBytes, 15);
+  assert.deepEqual(report.applicable.map((item) => item.path), ["PROJECT.md", "src/PROJECT.md"]);
+  assert.equal(report.applicable[1].truncated, true);
+  assert.match(textOutput[0], /configuration · fallbacks: PROJECT\.md · max bytes: 15/);
+  assert.match(textOutput[0], /2\/12 bytes, truncated/);
+});
+
 test("rejects unsupported --client values and combinations", async () => {
   await assert.rejects(() => run(["explain", "src/app.js", "--client", "claude"]), /unknown client: claude/);
   await assert.rejects(() => run(["explain", "src/app.js", "--client"]), /--client requires a value/);
@@ -133,6 +163,22 @@ test("rejects unsupported --client values and combinations", async () => {
   await assert.rejects(
     () => run(["explain", "src/app.js", "--effective", "--client", "codex"]),
     /--effective and --client cannot be used together/,
+  );
+  await assert.rejects(
+    () => run(["explain", "src/app.js", "--client", "codex", "--fallback", "../RULES.md"]),
+    /repository-local filename/,
+  );
+  await assert.rejects(
+    () => run(["explain", "src/app.js", "--client", "codex", "--max-bytes", "0"]),
+    /positive integer/,
+  );
+  await assert.rejects(
+    () => run(["explain", "src/app.js", "--fallback", "PROJECT.md"]),
+    /require --client codex/,
+  );
+  await assert.rejects(
+    () => run(["scan", "--max-bytes", "64"]),
+    /require explain --client codex/,
   );
 });
 

@@ -118,7 +118,7 @@ The formats are grounded in the current [OpenAI Codex AGENTS.md guide](https://l
 ```text
 instructree [scan] [root] [--json | --sarif] [--strict]
 instructree imports [root] [--json] [--strict]
-instructree explain <file> [--root <root>] [--client codex | --effective] [--json]
+instructree explain <file> [--root <root>] [--client codex [--fallback <name>]... [--max-bytes <n>] | --effective] [--json]
 instructree init [root] [--code-scanning]
 instructree --help | --version
 ```
@@ -144,6 +144,10 @@ instructree explain packages/api/src/routes.ts --effective
 # Select the Codex project instruction chain for a target
 instructree explain packages/api/src/routes.ts --client codex --json
 
+# Mirror project_doc_fallback_filenames and project_doc_max_bytes from Codex config
+instructree explain packages/api/src/routes.ts --client codex \
+  --fallback PROJECT.md --fallback TEAM.md --max-bytes 65536 --json
+
 # Audit the transitive Copilot import graph
 instructree imports --json
 
@@ -156,7 +160,9 @@ instructree init --code-scanning
 
 Exit codes are `0` for a passing policy, `1` for diagnostics that fail the selected policy, and `2` for invalid arguments or runtime errors.
 
-`explain <file> --client codex` follows the documented Codex project precedence from the repository root through the target file's directory. In each directory it selects a non-empty `AGENTS.override.md` first, otherwise a non-empty `AGENTS.md`, and reports at most one file per directory in broad-to-specific order. The JSON report identifies both `client` and `profile` as `codex`. Use plain `explain` for the neutral cross-client map; `--client codex` cannot be combined with `--effective`.
+`explain <file> --client codex` follows the documented Codex project precedence from the repository root through the target file's directory. In each directory it selects the first existing regular file from `AGENTS.override.md`, `AGENTS.md`, then the ordered `--fallback` filenames, and reports at most one selection per directory in broad-to-specific order. An existing empty candidate is reported as empty and blocks later candidates in that directory, matching Codex. The combined chain defaults to a 32,768-byte `--max-bytes` budget; per-file `bytes`, `includedBytes`, and `truncated` fields plus the top-level `codex` metadata make truncation and exclusion explicit in JSON.
+
+`--fallback` accepts one repository-local filename and can be repeated in precedence order. `--max-bytes` accepts a positive integer. These options correspond to Codex's `project_doc_fallback_filenames` and `project_doc_max_bytes` settings, but are explicit CLI inputs: Instructree does not read user-level Codex configuration or upload repository content. The JavaScript API uses `explain(target, root, { client: "codex", fallbackFilenames: ["PROJECT.md"], maxBytes: 65536 })`. Use plain `explain` for the neutral cross-client map; Codex configuration flags require `--client codex`, which cannot be combined with `--effective`.
 
 ## CI
 

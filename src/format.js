@@ -56,12 +56,21 @@ export function formatScan(result) {
 export function formatExplain(result, showEffective = false) {
   const client = result.client === "codex" ? ` ${dim("· Codex project chain")}` : "";
   const lines = [`${bold("instructree explain")} ${dim("·")} ${result.target}${client}`, ""];
+  if (result.codex) {
+    const fallbacks = result.codex.fallbackFilenames.length > 0 ? result.codex.fallbackFilenames.join(", ") : "none";
+    lines.push(dim(`configuration · fallbacks: ${fallbacks} · max bytes: ${result.codex.maxBytes}`), "");
+  }
   if (result.applicable.length === 0) {
     lines.push(dim("No automatically applicable instruction files found."));
   } else {
     lines.push(cyan(result.client === "codex" ? "applies, broad → specific" : "may apply, broad → specific"));
     result.applicable.forEach((file, index) => {
-      lines.push(`${index + 1}. ${file.path} ${dim(`[${file.family} · ${file.reason}]`)}`);
+      const bytes = result.client === "codex"
+        ? file.empty
+          ? " · selected, empty"
+          : ` · ${file.includedBytes}/${file.bytes} bytes${file.truncated ? ", truncated" : ""}`
+        : "";
+      lines.push(`${index + 1}. ${file.path} ${dim(`[${file.family} · ${file.reason}${bytes}]`)}`);
     });
   }
   if (result.available.length > 0) {
@@ -77,7 +86,7 @@ export function formatExplain(result, showEffective = false) {
     "",
     dim(
       result.client === "codex"
-        ? "Repository-only result for standard Codex project instruction files."
+        ? "Repository-only result for configured Codex project instruction candidates."
         : "Static result: clients can differ in discovery and precedence behavior.",
     ),
   );

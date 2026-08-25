@@ -26,7 +26,61 @@ function isInsideScope(target, scope) {
   return scope === "." || target === scope || target.startsWith(`${scope}/`);
 }
 
-function codexProjectChain(files, relativeTarget) {
+const CODEX_DEFAULT_MAX_BYTES = 32768;
+const CODEX_STANDARD_FILENAMES = ["AGENTS.override.md", "AGENTS.md"];
+
+function codexConfiguration(options) {
+  const fallbackFilenames = options.fallbackFilenames ?? [];
+  if (!Array.isArray(fallbackFilenames)) throw new Error("Codex fallbackFilenames must be an array");
+  for (const filename of fallbackFilenames) {
+    if (
+      typeof filename !== "string" ||
+      filename.length === 0 ||
+      filename !== filename.trim() ||
+      filename === "." ||
+      filename === ".." ||
+      filename.includes("/") ||
+      filename.includes("\\") ||
+      filename.includes("\0")
+    ) {
+      throw new Error(`Codex fallback must be a repository-local filename: ${String(filename)}`);
+    }
+  }
+
+  const maxBytes = options.maxBytes ?? CODEX_DEFAULT_MAX_BYTES;
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0) {
+    throw new Error("Codex maxBytes must be a positive integer");
+  }
+  return { fallbackFilenames: [...fallbackFilenames], maxBytes };
+}
+
+function isInsideRoot(root, candidate) {
+  const relative = path.relative(root, candidate);
+  return relative === "" || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
+}
+
+async function firstCodexCandidate(root, realRoot, directory, candidateFilenames) {
+  for (const filename of candidateFilenames) {
+    const relativePath = directory === "." ? filename : `${directory}/${filename}`;
+    const absolutePath = path.join(root, ...relativePath.split("/"));
+    let stat;
+    try {
+      stat = await fs.stat(absolutePath);
+    } catch (error) {
+      if (["ENOENT", "ENOTDIR"].includes(error.code)) continue;
+      throw error;
+    }
+    if (!stat.isFile()) continue;
+    const realCandidate = await fs.realpath(absolutePath);
+    if (!isInsideRoot(realRoot, realCandidate)) {
+      throw new Error(`Codex project instruction resolves outside the repository root: ${relativePath}`);
+    }
+    return { relativePath, absolutePath };
+  }
+  return null;
+}
+
+async function codexProjectChain(root, files, relativeTarget, configuration) {
   const targetDirectory = path.posix.dirname(relativeTarget);
   const directories = ["."];
   let current = "";
@@ -38,22 +92,48 @@ function codexProjectChain(files, relativeTarget) {
   }
 
   const filesByPath = new Map(files.map((file) => [file.path, file]));
-  return directories.flatMap((directory) => {
-    const prefix = directory === "." ? "" : `${directory}/`;
-    const override = filesByPath.get(`${prefix}AGENTS.override.md`);
-    const base = filesByPath.get(`${prefix}AGENTS.md`);
-    const selected = [override, base].find((file) => file?.content.trim());
-    if (!selected) return [];
-    return [{
-      path: selected.path,
-      family: selected.family,
-      kind: selected.kind,
+  const candidateFilenames = [...new Set([...CODEX_STANDARD_FILENAMES, ...configuration.fallbackFilenames])];
+  const realRoot = await fs.realpath(root);
+  const applicable = [];
+  let remainingBytes = configuration.maxBytes;
+
+  for (const directory of directories) {
+    if (remainingBytes === 0) break;
+    const selected = await firstCodexCandidate(root, realRoot, directory, candidateFilenames);
+    if (!selected) continue;
+
+    const data = await fs.readFile(selected.absolutePath);
+    const included = data.subarray(0, remainingBytes);
+    const empty = included.toString("utf8").trim().length === 0;
+    const includedBytes = empty ? 0 : included.length;
+    const knownFile = filesByPath.get(selected.relativePath);
+    applicable.push({
+      path: selected.relativePath,
+      family: knownFile?.family ?? "Codex",
+      kind: knownFile?.kind ?? "always",
       reason: directory === "." ? "repository-wide" : `directory scope: ${directory}/`,
-    }];
-  });
+      bytes: data.length,
+      includedBytes,
+      truncated: data.length > remainingBytes,
+      empty,
+    });
+    remainingBytes -= includedBytes;
+  }
+
+  return {
+    applicable,
+    metadata: {
+      fallbackFilenames: configuration.fallbackFilenames,
+      maxBytes: configuration.maxBytes,
+      includedBytes: configuration.maxBytes - remainingBytes,
+      truncated: applicable.some((file) => file.truncated),
+      budgetExhausted: remainingBytes === 0,
+    },
+  };
 }
 
 export async function explain(target, root = process.cwd(), options = {}) {
+  const configuration = options.client === "codex" ? codexConfiguration(options) : null;
   const result = await scan(root);
   const relativeTarget = normalize(path.relative(result.root, path.resolve(result.root, target)));
   if (relativeTarget === ".." || relativeTarget.startsWith("../")) {
@@ -61,12 +141,14 @@ export async function explain(target, root = process.cwd(), options = {}) {
   }
 
   if (options.client === "codex") {
+    const chain = await codexProjectChain(result.root, result.files, relativeTarget, configuration);
     return {
       ...result,
       target: relativeTarget,
       client: "codex",
       profile: "codex",
-      applicable: codexProjectChain(result.files, relativeTarget),
+      codex: chain.metadata,
+      applicable: chain.applicable,
       available: [],
       effective: [],
     };
