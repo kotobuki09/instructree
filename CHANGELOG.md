@@ -2,7 +2,7 @@
 
 All notable changes to Instructree are documented here.
 
-## Unreleased
+## 0.8.0 — 2026-08-26
 
 - Add `instructree init [root] --code-scanning` to scaffold a least-privilege, fork-safe SARIF workflow.
 

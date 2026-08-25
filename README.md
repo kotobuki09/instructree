@@ -53,7 +53,7 @@ instructree
 Install the native skill for Codex with GitHub CLI 2.90 or later:
 
 ```bash
-gh skill install kotobuki09/instructree instructree@v0.7.1 --agent codex --scope user
+gh skill install kotobuki09/instructree instructree@v0.8.0 --agent codex --scope user
 ```
 
 Or use the cross-agent `skills` installer: `npx skills add kotobuki09/instructree --skill instructree -g --agent codex`.
@@ -162,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: kotobuki09/instructree@v0.7.1
+      - uses: kotobuki09/instructree@v0.8.0
         with:
           strict: true
 ```
