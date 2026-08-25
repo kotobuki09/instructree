@@ -217,6 +217,7 @@ test("reports an existing non-directory scope in JSON and text", async (context)
   assert.equal(result.scopes[0].exists, true);
   assert.equal(result.scopes[0].isDirectory, false);
   assert.equal(result.scanErrors[0].path, "~/.agents/skills");
+  assert.equal(result.scanErrors[0].line, 1);
   assert.match(result.scanErrors[0].message, /not a directory/);
   assert.equal(result.signals.scanErrorCount, 1);
 

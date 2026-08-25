@@ -182,7 +182,7 @@ export function formatSkills(result) {
   }
   if (result.scanErrors.length > 0) {
     lines.push("", red("scan errors"));
-    result.scanErrors.forEach((error) => lines.push(`- ${error.path} · ${error.message}`));
+    result.scanErrors.forEach((error) => lines.push(`- ${error.path}:${error.line} · ${error.message}`));
   }
   lines.push("", dim("limitations"));
   result.provenance.limitations.forEach((limitation) => lines.push(dim(`- ${limitation}`)));
