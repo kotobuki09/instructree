@@ -58,6 +58,8 @@ Then ask: `Use $instructree to audit the agent instructions in this repository.`
 
 It prints stable file-and-line diagnostics and exits nonzero for schema errors, so the default is safe for CI. Add `--strict` to fail on warnings too.
 
+Use `--sarif` to send the same diagnostics to GitHub code scanning or another SARIF 2.1.0 consumer. The report includes stable rule IDs, repository-relative file URIs, line locations, and error, warning, or note severity.
+
 The [real-world compatibility report](docs/compatibility.md) pins and audits 682 instruction and skill files across three public catalogs. The v0.5.0 pass reduced one large catalog from 255 noisy findings to four reviewable diagnostics with zero errors.
 
 ## Supported formats
@@ -96,7 +98,7 @@ The formats are grounded in the current [VS Code custom-instructions documentati
 ## Commands
 
 ```text
-instructree [scan] [root] [--json] [--strict]
+instructree [scan] [root] [--json | --sarif] [--strict]
 instructree imports [root] [--json] [--strict]
 instructree explain <file> [--root <root>] [--effective] [--json]
 instructree --help | --version
@@ -113,6 +115,9 @@ instructree ../my-monorepo --strict
 
 # Feed diagnostics to another tool
 instructree --json > instructree-report.json
+
+# Produce a SARIF 2.1.0 report for code scanning
+instructree --sarif > instructree.sarif
 
 # See the broad-to-specific instruction map for a target
 instructree explain packages/api/src/routes.ts --effective
@@ -134,12 +139,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: kotobuki09/instructree@v0.5.0
+      - uses: kotobuki09/instructree@v0.6.0
         with:
           strict: true
 ```
 
 The action runs directly on Node 24, needs no dependency-install step, and turns diagnostics into file-and-line annotations. Set `root` to scan one repository subdirectory.
+
+For code scanning, run the CLI with `--sarif` and upload `instructree.sarif` with GitHub's [`upload-sarif` action](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github). SARIF keeps the normal exit policy: errors fail, and warnings fail only with `--strict`.
 
 ## Design boundaries
 
