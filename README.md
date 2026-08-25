@@ -46,6 +46,8 @@ npx skills add kotobuki09/instructree --skill instructree -g --agent codex
 
 Then ask: `Use $instructree to audit the agent instructions in this repository.` See the focused [Codex setup](docs/codex-setup.md) for the companion engineering and launch skills used to develop this project.
 
+If Instructree catches a stale or conflicting agent instruction before your next coding session, [star the repository](https://github.com/kotobuki09/instructree) so more coding-agent users can find it.
+
 ## What it catches
 
 - malformed or incomplete frontmatter in skills, custom agents, and agentic workflows;
