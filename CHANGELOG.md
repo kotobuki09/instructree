@@ -2,6 +2,12 @@
 
 All notable changes to Instructree are documented here.
 
+## 0.7.0 — 2026-08-26
+
+- Add `instructree init [root]` to scaffold a pinned, read-only GitHub Actions workflow.
+- Refuse to overwrite an existing workflow or write through symlinked workflow directories.
+- Document the one-command CI onboarding path.
+
 ## 0.6.0 — 2026-08-26
 
 - Add `scan --sarif` output compatible with SARIF 2.1.0 and GitHub code scanning.

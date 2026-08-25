@@ -14,6 +14,7 @@ Usage:
   instructree [scan] [root] [--json | --sarif] [--strict]
   instructree imports [root] [--json] [--strict]
   instructree explain <file> [--root <root>] [--effective] [--json]
+  instructree init [root]
   instructree --help | --version
 
 Exit codes:
@@ -55,7 +56,7 @@ function parseArguments(argv) {
     if (!options.target) throw new Error("explain requires a target file");
     if (positional.length > 2) throw new Error(`unexpected argument: ${positional[2]}`);
   } else {
-    if (["scan", "imports"].includes(positional[0])) options.command = positional.shift();
+    if (["scan", "imports", "init"].includes(positional[0])) options.command = positional.shift();
     options.root ??= positional[0] ?? process.cwd();
     if (positional.length > 1) throw new Error(`unexpected argument: ${positional[1]}`);
   }
@@ -68,7 +69,55 @@ function parseArguments(argv) {
   if (options.sarif && options.command !== "scan") {
     throw new Error("--sarif can only be used with scan");
   }
+  if (options.command === "init" && (options.json || options.strict || options.effective)) {
+    throw new Error("init does not accept output or policy options");
+  }
   return options;
+}
+
+async function ensureLocalDirectory(root, relativePath) {
+  let current = root;
+  for (const segment of relativePath.split("/")) {
+    current = path.join(current, segment);
+    try {
+      const entry = await fs.lstat(current);
+      if (entry.isSymbolicLink()) throw new Error(`refusing to write through symbolic link: ${segment}`);
+      if (!entry.isDirectory()) throw new Error(`expected a directory: ${segment}`);
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+      await fs.mkdir(current);
+    }
+  }
+  return current;
+}
+
+async function initializeWorkflow(root, version, io) {
+  const resolvedRoot = await fs.realpath(path.resolve(root));
+  const workflowDirectory = await ensureLocalDirectory(resolvedRoot, ".github/workflows");
+  const workflowPath = path.join(workflowDirectory, "instructree.yml");
+  const workflow = `name: instruction-lint
+on: [pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  instructree:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: kotobuki09/instructree@v${version}
+        with:
+          strict: true
+`;
+  try {
+    await fs.writeFile(workflowPath, workflow, { encoding: "utf8", flag: "wx" });
+  } catch (error) {
+    if (error.code === "EEXIST") throw new Error("workflow already exists: .github/workflows/instructree.yml");
+    throw error;
+  }
+  io.log("created .github/workflows/instructree.yml");
+  return 0;
 }
 
 function jsonResult(result, command) {
@@ -99,6 +148,10 @@ export async function run(argv, io = console) {
     const packageJson = JSON.parse(await fs.readFile(packagePath, "utf8"));
     io.log(packageJson.version);
     return 0;
+  }
+  if (options.command === "init") {
+    const packageJson = JSON.parse(await fs.readFile(packagePath, "utf8"));
+    return initializeWorkflow(options.root, packageJson.version, io);
   }
 
   const result =
