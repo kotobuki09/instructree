@@ -4,6 +4,9 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+- Add `instructree doctor [cwd]` for one share-safe Codex pre-session report covering supported user project settings, user instructions, the current project chain, and summarized skill state.
+- Honor supported user `project_root_markers`, `project_doc_fallback_filenames`, and `project_doc_max_bytes` while failing closed on unsupported relevant syntax and redacting absolute paths.
+
 ## 0.15.0 — 2026-08-26
 
 - Read supported user `~/.codex/config.toml` skill settings, resolve current Codex name/path rule precedence, and report disabled candidates, unmatched rules, and config issues without exposing absolute paths.

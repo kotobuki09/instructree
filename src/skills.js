@@ -21,12 +21,16 @@ async function hasEntry(target) {
   }
 }
 
-async function findRepositoryRoot(start) {
+export async function findCodexProjectRoot(start, markers = [".git"]) {
+  if (!Array.isArray(markers)) throw new Error("Codex project root markers must be an array");
+  if (markers.length === 0) return { root: start, markerFound: false, marker: null };
   let current = start;
   while (true) {
-    if (await hasEntry(path.join(current, ".git"))) return { root: current, markerFound: true };
+    for (const marker of markers) {
+      if (await hasEntry(path.join(current, marker))) return { root: current, markerFound: true, marker };
+    }
     const parent = path.dirname(current);
-    if (parent === current) return { root: start, markerFound: false };
+    if (parent === current) return { root: start, markerFound: false, marker: null };
     current = parent;
   }
 }
@@ -299,12 +303,17 @@ function withoutOrder(skill) {
   return publicSkill;
 }
 
-export async function auditCodexSkills(cwd = process.cwd(), home = process.env.HOME ?? process.env.USERPROFILE) {
+export async function auditCodexSkills(
+  cwd = process.cwd(),
+  home = process.env.HOME ?? process.env.USERPROFILE,
+  options = {},
+) {
   const absoluteCwd = await fs.realpath(path.resolve(cwd));
   const cwdStat = await fs.stat(absoluteCwd);
   if (!cwdStat.isDirectory()) throw new Error(`not a directory: ${absoluteCwd}`);
 
-  const repository = await findRepositoryRoot(absoluteCwd);
+  const projectRootMarkers = options.projectRootMarkers ?? [".git"];
+  const repository = await findCodexProjectRoot(absoluteCwd, projectRootMarkers);
   const repositoryRoot = repository.root;
   const repositoryDirectories = [];
   let current = absoluteCwd;
@@ -437,6 +446,9 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
       root: "<repository>",
       currentDirectory: normalize(path.relative(repositoryRoot, absoluteCwd)) || ".",
       repositoryMarkerFound: repository.markerFound,
+      marker: repository.marker,
+      markers: projectRootMarkers,
+      markerSource: options.projectRootMarkerSource ?? "default",
     },
     scopes: scannedScopes,
     skills: allSkills.map(withoutOrder),
@@ -462,7 +474,9 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
       limitations: [
         "Does not include Codex admin or system skills.",
         "Reads only supported skill settings from user ~/.codex/config.toml; session flags and project config are not applied.",
-        "Uses the nearest .git marker rather than configured Codex project-root markers.",
+        options.projectRootMarkers
+          ? "Uses supported user project-root markers; managed configuration and session overrides are not applied."
+          : "Uses the nearest .git marker rather than configured Codex project-root markers.",
         "Reports user-configured candidate state, not the exact skills loaded after plugins, product restrictions, or session overrides.",
       ],
     },

@@ -229,3 +229,72 @@ export function formatSkills(result, { showAll = false } = {}) {
   lines.push("", dim(`Read-only candidate-scope audit; source: ${result.provenance.source}`));
   return lines.join("\n");
 }
+
+export function formatDoctor(result) {
+  const { project: projectConfiguration } = result.configuration;
+  const { user, project } = result.instructions;
+  const marker = result.repository.markerFound
+    ? `${result.repository.marker} · ${result.repository.markerSource}`
+    : `none · ${result.repository.markerSource}`;
+  const lines = [
+    `${bold("instructree doctor")} ${dim("· Codex pre-session setup audit")}`,
+    `${dim("repository cwd:")} ${result.repository.currentDirectory}`,
+    `${dim("project root:")} <repository> ${dim(`· marker: ${marker}`)}`,
+    "",
+    cyan(`user config · ${result.configuration.path}`),
+  ];
+
+  if (["parsed", "missing"].includes(projectConfiguration.status)) {
+    const fallbacks = projectConfiguration.settings.fallbackFilenames.length > 0
+      ? projectConfiguration.settings.fallbackFilenames.join(", ")
+      : "none";
+    const markers = projectConfiguration.settings.rootMarkers.length > 0
+      ? projectConfiguration.settings.rootMarkers.join(", ")
+      : "none (current directory only)";
+    lines.push(dim(`status: ${projectConfiguration.status} · root markers: ${markers} · fallbacks: ${fallbacks} · max bytes: ${projectConfiguration.settings.maxBytes}`));
+  } else {
+    lines.push(red(`status: ${projectConfiguration.status} · project instruction preview unavailable`));
+  }
+  for (const issue of projectConfiguration.issues) {
+    lines.push(red(`- ${issue.path}:${issue.line} · ${issue.message}`));
+  }
+
+  lines.push("", cyan("user instructions"));
+  if (user.selected) lines.push(`- ${user.selected.path} ${dim(`· ${user.selected.bytes} bytes · selected`)}`);
+  else lines.push(dim(`- ${user.status}`));
+  for (const skipped of user.skippedEmpty) lines.push(dim(`- ${skipped.path} · empty, skipped`));
+  for (const warning of user.warnings) lines.push(red(`- ${warning.path}:${warning.line} · ${warning.message}`));
+
+  lines.push("", cyan("project instructions"));
+  if (project.status !== "resolved") {
+    lines.push(red(`- unavailable · ${project.reason}`));
+  } else if (project.files.length === 0) {
+    lines.push(dim("- no selected project instruction files"));
+  } else {
+    project.files.forEach((file, index) => {
+      const bytes = file.empty
+        ? "selected, empty"
+        : `${file.includedBytes}/${file.bytes} bytes${file.truncated ? ", truncated" : ""}`;
+      lines.push(`${index + 1}. ${file.path} ${dim(`· ${bytes}`)}`);
+    });
+    lines.push(dim(`total: ${project.includedBytes}/${project.maxBytes} bytes${project.budgetExhausted ? " · budget exhausted" : ""}`));
+  }
+  for (const diagnostic of project.diagnostics) {
+    const markerLabel = diagnostic.severity === "error" ? red("error") : diagnostic.severity === "warning" ? yellow("warn ") : dim("note ");
+    lines.push(`${markerLabel} ${diagnostic.code} ${diagnostic.file}:${diagnostic.line} · ${diagnostic.message}`);
+  }
+
+  lines.push(
+    "",
+    cyan("skills"),
+    `candidates: ${result.skills.candidateCount} · configured: ${result.skills.configuredCandidateCount} · disabled: ${result.skills.disabledByUserConfigCount}`,
+    `duplicates: ${result.skills.duplicateCount} · metadata failures: ${result.skills.metadataFailureCount} · metadata warnings: ${result.skills.metadataWarningCount} · scan errors: ${result.skills.scanErrorCount}`,
+  );
+  for (const skill of result.skills.disabledSkills) lines.push(yellow(`- disabled by user config · ${skill.name ?? "unnamed"} · ${skill.path}`));
+  for (const duplicate of result.skills.duplicates) lines.push(yellow(`- duplicate name · ${duplicate.name}`));
+  for (const issue of result.skills.configIssues) lines.push(red(`- ${issue.path}:${issue.line} · ${issue.message}`));
+
+  lines.push("", dim(`attention signals: ${result.signals.attentionCount}`), "", dim("limitations"));
+  result.provenance.limitations.forEach((limitation) => lines.push(dim(`- ${limitation}`)));
+  return lines.join("\n");
+}

@@ -3,8 +3,9 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs/promises";
 import { explain, scan } from "./index.js";
 import { auditCodexSkills } from "./skills.js";
+import { diagnoseCodex } from "./doctor.js";
 import { formatExplain, formatImports, formatScan } from "./format.js";
-import { formatSkills } from "./format.js";
+import { formatDoctor, formatSkills } from "./format.js";
 import { formatSarif } from "./sarif.js";
 
 const packagePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../package.json");
@@ -16,6 +17,7 @@ Usage:
   instructree [scan] [root] [--json | --sarif] [--strict]
   instructree imports [root] [--json] [--strict]
   instructree skills [cwd] [--home <home>] [--client codex] [--all | --json]
+  instructree doctor [cwd] [--home <home>] [--json]
   instructree explain <file> [--root <root>] [--client codex [--fallback <name>]... [--max-bytes <n>] | --effective] [--json]
   instructree init [root] [--code-scanning]
   instructree --help | --version
@@ -89,7 +91,7 @@ function parseArguments(argv) {
     if (!options.target) throw new Error("explain requires a target file");
     if (positional.length > 2) throw new Error(`unexpected argument: ${positional[2]}`);
   } else {
-    if (["scan", "imports", "init", "skills"].includes(positional[0])) options.command = positional.shift();
+    if (["scan", "imports", "init", "skills", "doctor"].includes(positional[0])) options.command = positional.shift();
     options.root ??= positional[0] ?? process.cwd();
     if (positional.length > 1) throw new Error(`unexpected argument: ${positional[1]}`);
   }
@@ -111,14 +113,17 @@ function parseArguments(argv) {
   if ((options.fallbackFilenames.length > 0 || options.maxBytes !== null) && options.client !== "codex") {
     throw new Error("--fallback and --max-bytes require --client codex");
   }
-  if (options.home && options.command !== "skills") {
-    throw new Error("--home can only be used with skills");
+  if (options.home && !["skills", "doctor"].includes(options.command)) {
+    throw new Error("--home can only be used with skills or doctor");
   }
   if (options.command === "skills" && (options.effective || options.fallbackFilenames.length > 0 || options.maxBytes !== null)) {
     throw new Error("skills does not accept explain options");
   }
   if (options.command === "skills" && options.strict) {
     throw new Error("skills does not accept --strict; audit signals are report data");
+  }
+  if (options.command === "doctor" && options.strict) {
+    throw new Error("doctor does not accept --strict; audit signals are report data");
   }
   if (options.all && options.command !== "skills") {
     throw new Error("--all can only be used with skills");
@@ -237,7 +242,7 @@ jobs:
 }
 
 function jsonResult(result, command) {
-  if (command === "skills") return JSON.stringify(result, null, 2);
+  if (["skills", "doctor"].includes(command)) return JSON.stringify(result, null, 2);
   if (command === "imports") {
     return JSON.stringify({ root: result.root, ...result.imports }, null, 2);
   }
@@ -277,7 +282,9 @@ export async function run(argv, io = console) {
   }
 
   const result =
-    options.command === "skills"
+    options.command === "doctor"
+      ? await diagnoseCodex(options.root ?? process.cwd(), options.home ?? undefined)
+      : options.command === "skills"
       ? await auditCodexSkills(options.root ?? process.cwd(), options.home ?? undefined)
       : options.command === "explain"
       ? await explain(options.target, options.root ?? process.cwd(), {
@@ -294,6 +301,8 @@ export async function run(argv, io = console) {
       ? sarif
       : options.json
         ? jsonResult(result, options.command)
+        : options.command === "doctor"
+          ? formatDoctor(result)
         : options.command === "skills"
           ? formatSkills(result, { showAll: options.all })
           : options.command === "explain"
@@ -303,7 +312,7 @@ export async function run(argv, io = console) {
             : formatScan(result),
   );
 
-  const policyDiagnostics = options.command === "skills" ? [] : options.command === "imports" ? result.imports.diagnostics : result.diagnostics;
+  const policyDiagnostics = ["skills", "doctor"].includes(options.command) ? [] : options.command === "imports" ? result.imports.diagnostics : result.diagnostics;
   const hasErrors = policyDiagnostics.some((item) => item.severity === "error");
   const hasWarnings = policyDiagnostics.some((item) => item.severity === "warning");
   const exitCode = hasErrors || (options.strict && hasWarnings) ? 1 : 0;

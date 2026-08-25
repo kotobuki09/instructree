@@ -22,6 +22,18 @@ npx --yes github:kotobuki09/instructree#v0.15.0 init --code-scanning
 
 The generated workflow uses least-privilege permissions, avoids privileged SARIF uploads from forked pull requests, and refuses to overwrite an existing workflow.
 
+## Diagnose the whole Codex setup
+
+Before starting a session, run one share-safe report from the working directory:
+
+```bash
+instructree doctor .
+```
+
+The doctor reads supported user `project_doc_max_bytes`, `project_doc_fallback_filenames`, and `project_root_markers`; identifies the selected non-empty user `AGENTS.override.md` or `AGENTS.md`; resolves the current directory's project chain; and summarizes local skill candidates and supported user skill configuration. Add `--json` for deterministic machine-readable output. Both formats redact absolute home and repository paths.
+
+This is a static pre-session preview. It deliberately does not claim to resolve managed configuration, profiles, session overrides, project trust, remote environments, plugins, or a resumed session. Unsupported relevant project-setting syntax fails closed instead of producing a partial chain. The boundary and pinned sources are recorded in the [Codex doctor research note](research/codex-doctor.md).
+
 Instructree recognizes Codex-specific `AGENTS.override.md` files described in the official [OpenAI Codex AGENTS.md guide](https://learn.chatgpt.com/docs/agent-configuration/agents-md). They are shown with normal directory scope in `scan` and neutral `explain`, while `explain --client codex` resolves the first existing regular candidate per directory, even when that candidate is empty. Its JSON output reports the configured fallbacks, shared byte budget, included bytes, and truncation state. The empty-candidate and byte-budget details are checked against the pinned [Codex implementation](https://github.com/openai/codex/blob/9be8d6e1c3dbb145d2d7ac3ba46729340e6d8d40/codex-rs/core/src/agents_md.rs). Codex overrides remain outside GitHub Copilot CLI `@path` import expansion.
 
 ## Audit local skill candidate scopes

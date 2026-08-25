@@ -1,6 +1,6 @@
 ---
 name: instructree
-description: Map, explain, and lint repository-scoped coding-agent instructions. Use when auditing AGENTS.md, CLAUDE.md, Copilot instructions, agent skills, custom agents, or instruction conflicts before changing code.
+description: Diagnose Codex setup and map, explain, or lint repository-scoped coding-agent instructions. Use when Codex instructions or skills seem missing, or when auditing AGENTS.md, CLAUDE.md, Copilot instructions, agent skills, custom agents, or instruction conflicts before changing code.
 license: MIT
 metadata:
   short-description: Audit coding-agent instruction scope
@@ -29,6 +29,7 @@ Choose the narrowest command that answers the request:
 - `instructree explain <file> --root . --effective` includes recursive Copilot CLI imports.
 - `instructree imports . --json` audits the recursive `@path` graph.
 - `instructree skills . --client codex` concisely audits Codex user and repository-local skill candidates plus supported user `~/.codex/config.toml` skill settings without installing, writing, or uploading anything. It reports disabled candidates, unmatched rules, unsupported relevant syntax, and configured catalog pressure. Add `--all` for every human-readable candidate or `--json` for the complete structured object. The `--client codex` flag may be omitted because `skills` is Codex-specific; use optional `--home <home>` only to inspect a different user scope.
+- `instructree doctor .` produces one share-safe Codex pre-session report covering supported user project settings, user instructions, the current project chain, and summarized skill state. Add `--json` for deterministic structured output.
 - `instructree scan . --sarif` emits SARIF 2.1.0 for code-scanning integrations.
 - Add `--strict` only when warnings should fail the check.
 
@@ -37,6 +38,8 @@ Choose the narrowest command that answers the request:
 Report file paths, line numbers, diagnostic codes, and the command's exit status. Separate schema or path errors from warnings. Describe `always`/`never` conflicts as possible conflicts requiring human review, not proof of agent behavior.
 
 Instructree is static analysis. It does not upload repository content or call a model. Treat plain `explain` as a cross-client map of what may apply; use `--client codex` only for the documented repository project-instruction chain.
+
+Use `doctor` when the user asks why Codex instructions or skills are missing, which project root or instruction files will be selected, or for a compact report suitable for an issue. It reads only a supported user-config subset and fails closed on unsupported relevant project settings. Treat its output as a pre-session preview, not live or resumed-session state; repeat its limitations when they matter.
 
 The `skills` inventory follows Codex's documented `~/.agents/skills` plus repository `.agents/skills` candidate-scope model. It recursively scans depth-bounded roots, follows symlinked folders, deduplicates canonical targets, skips hidden descendants, and reports logical repository or `~/.agents/skills/...` paths. It flags possible duplicate names with source lines, malformed metadata, scan failures, and an approximate initial-list character estimate including name, description, and logical path. It applies the supported skill subset of user `~/.codex/config.toml` with current Codex name/path and later-rule precedence, failing closed on unsupported relevant syntax. The 8,000-character comparison is only the unknown-context-window reference; Codex otherwise uses at most 2% of model context, and logical redacted paths may differ from runtime paths. The audit excludes admin/system and plugin skills, session overrides, project-level skill rules, product restrictions, and configured project-root markers, so it does not claim an exact loaded list. Read the official [Codex skills documentation](https://developers.openai.com/codex/skills) and Instructree's pinned [skill-config research note](https://github.com/kotobuki09/instructree/blob/main/docs/research/codex-skill-config.md) when interpreting the estimate.
 

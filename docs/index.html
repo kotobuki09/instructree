@@ -4,19 +4,19 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Instructree — map the instructions your coding agent will use</title>
-    <meta name="description" content="Trace Codex AGENTS.md precedence, audit local skill scopes and prompt-list pressure, and catch broken coding-agent instructions with zero runtime dependencies.">
+    <meta name="description" content="Run a share-safe Codex doctor for AGENTS.md precedence, user config, and local skills; catch broken coding-agent instructions with zero runtime dependencies.">
     <link rel="canonical" href="https://kotobuki09.github.io/instructree/">
     <link rel="describedby" type="text/markdown" href="https://kotobuki09.github.io/instructree/llms.txt">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Instructree — see the instruction tree before your coding agent does">
-    <meta property="og:description" content="Trace Codex precedence and audit AGENTS.md, local skill scopes, CLAUDE.md, Copilot instructions, and imports locally.">
+    <meta property="og:description" content="Diagnose Codex AGENTS.md precedence, supported user config, and local skill scopes without uploading code.">
     <meta property="og:url" content="https://kotobuki09.github.io/instructree/">
     <meta property="og:image" content="https://raw.githubusercontent.com/kotobuki09/instructree/main/assets/social-preview.png">
     <meta property="og:image:width" content="1280">
     <meta property="og:image:height" content="640">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Instructree — see the instruction tree before your coding agent does">
-    <meta name="twitter:description" content="Trace Codex precedence and audit local skill scopes and coding-agent instructions.">
+    <meta name="twitter:description" content="Run a share-safe Codex doctor for instructions, config, and local skills.">
     <meta name="twitter:image" content="https://raw.githubusercontent.com/kotobuki09/instructree/main/assets/social-preview.png">
     <meta name="theme-color" content="#0d1117">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -28,7 +28,7 @@
         "name": "Instructree",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Windows, macOS, Linux",
-        "description": "A zero-dependency CLI and GitHub Action for mapping coding-agent instructions and auditing Codex local skill scopes.",
+        "description": "A zero-dependency Codex doctor, CLI, and GitHub Action for mapping coding-agent instructions and auditing local skill scopes.",
         "url": "https://kotobuki09.github.io/instructree/",
         "downloadUrl": "https://github.com/kotobuki09/instructree/releases/tag/v0.15.0",
         "softwareVersion": "0.15.0",
@@ -55,7 +55,7 @@
         <div class="hero-copy">
           <p class="eyebrow"><span></span> Open source · zero runtime dependencies</p>
           <h1 id="hero-title">See the instruction tree <em>before your coding agent does.</em></h1>
-          <p class="hero-lede">Trace the repository instructions Codex selects for a target file. Audit local skill scopes, <code>AGENTS.md</code>, Claude, Copilot, and nested imports without uploading your code.</p>
+          <p class="hero-lede">Diagnose the user instructions, project chain, and local skills Codex will consider before a session. Audit <code>AGENTS.md</code>, Claude, Copilot, and nested imports without uploading your code.</p>
           <div class="hero-actions">
             <a class="button primary" href="https://github.com/kotobuki09/instructree">Explore the repository <span aria-hidden="true">→</span></a>
             <a class="button secondary" href="https://github.com/kotobuki09/instructree/releases/tag/v0.15.0">Release v0.15.0</a>
@@ -66,28 +66,28 @@
           </div>
         </div>
 
-        <div class="terminal" aria-label="Example Instructree Codex explanation">
+        <div class="terminal" aria-label="Example Instructree Codex doctor">
           <div class="terminal-bar">
             <span class="dot red"></span><span class="dot amber"></span><span class="dot green"></span>
             <span class="terminal-title">~/acme-app</span>
           </div>
           <div class="terminal-body">
-            <p><span class="prompt">$</span> instructree explain src/api/client.ts <span class="accent">--client codex --fallback PROJECT.md</span></p>
+            <p><span class="prompt">$</span> instructree <span class="accent">doctor</span></p>
             <div class="terminal-gap"></div>
-            <p class="bright">Codex project chain</p>
-            <p class="muted">selected, broad → specific</p>
+            <p class="bright">Codex pre-session setup audit</p>
+            <p class="muted">user config · root marker: .git · max bytes: 32768</p>
             <ol>
               <li><span>AGENTS.override.md</span><small>repository-wide</small></li>
               <li><span>src/AGENTS.md</span><small>directory scope: src/</small></li>
               <li><span>src/api/AGENTS.override.md</span><small>directory scope: src/api/</small></li>
             </ol>
-            <p class="terminal-note"><span>repository-only</span> · deterministic · no uploads</p>
+            <p class="terminal-note"><span>path-redacted</span> · deterministic · no uploads</p>
           </div>
         </div>
       </section>
 
       <section class="proof-strip" id="proof" aria-label="Verification evidence">
-        <div><strong>63</strong><span>test cases</span></div>
+        <div><strong>68</strong><span>test cases</span></div>
         <div><strong>9</strong><span>CI environments</span></div>
         <div><strong>682</strong><span>public files audited</span></div>
         <div><strong>0</strong><span>runtime dependencies</span></div>
@@ -102,8 +102,8 @@
         <div class="feature-grid">
           <article>
             <p class="feature-number">01</p>
-            <h3>Trace Codex precedence</h3>
-            <p>Select the first existing <code>AGENTS.override.md</code>, <code>AGENTS.md</code>, or configured fallback in each directory, then apply Codex's shared byte budget.</p>
+            <h3>Run the Codex doctor</h3>
+            <p>Resolve supported user settings, user instructions, project precedence, byte budgets, and local skill state in one share-safe report.</p>
           </article>
           <article>
             <p class="feature-number">02</p>
