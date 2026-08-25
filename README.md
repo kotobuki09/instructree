@@ -49,13 +49,15 @@ Then ask: `Use $instructree to audit the agent instructions in this repository.`
 
 - malformed or incomplete frontmatter in skills, custom agents, and agentic workflows;
 - duplicate skill names across `.agents`, `.claude`, and `.github`;
-- skill names that do not use portable kebab-case or match their folder;
+- skill names that do not use portable kebab-case or match their folder, with nested namespace prefixes supported;
 - broken relative Markdown links inside agent instruction files;
 - instruction files that are manual-only because they have no path glob;
 - recursive Copilot `@path` imports that are missing, cyclic, duplicated, absolute, or escape the repository;
 - likely `always`/`never` conflicts in overlapping scopes, clearly labeled as heuristic.
 
 It prints stable file-and-line diagnostics and exits nonzero for schema errors, so the default is safe for CI. Add `--strict` to fail on warnings too.
+
+The [real-world compatibility report](docs/compatibility.md) pins and audits 682 instruction and skill files across three public catalogs. The v0.5.0 pass reduced one large catalog from 255 noisy findings to four reviewable diagnostics with zero errors.
 
 ## Supported formats
 
@@ -64,7 +66,7 @@ It prints stable file-and-line diagnostics and exits nonzero for schema errors, 
 | Cross-agent | `AGENTS.md` at any depth | Directory scope |
 | Claude | `CLAUDE.md`, `CLAUDE.local.md`, `.claude/rules/*.md` | Directory scope or `paths` |
 | GitHub Copilot | `.github/copilot-instructions.md`, `*.instructions.md`, recursive `@path` imports | Repository scope, `applyTo`, and effective import graph |
-| Agent Skills | `skills/*/SKILL.md`, `.agents/skills/*/SKILL.md`, `.claude/skills/*/SKILL.md`, `.github/skills/*/SKILL.md` | Listed as on demand |
+| Agent Skills | catalog-root `*/SKILL.md`; nested `skills/**/SKILL.md`, `.agents/skills/**/SKILL.md`, `.claude/skills/**/SKILL.md`, `.github/skills/**/SKILL.md` | Listed as on demand |
 | Custom agents | `.github/agents/*.agent.md` | Listed as on demand |
 | Agentic Workflows | `.github/workflows/*.md` | Metadata validation |
 | Other agents | `GEMINI.md`, `.cursor/rules/*.mdc`, `.windsurf/rules/*.md` | Directory scope or `globs` |
@@ -131,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: kotobuki09/instructree@v0.4.0
+      - uses: kotobuki09/instructree@v0.5.0
         with:
           strict: true
 ```
