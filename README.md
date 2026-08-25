@@ -4,7 +4,7 @@
 
 **Find the instructions your AI coding agent will actually use.**
 
-Map and lint `AGENTS.md`, `CLAUDE.md`, Copilot instructions, agent skills, and agentic workflows—including recursive `@path` imports—locally, with zero runtime dependencies.
+Map and lint `AGENTS.md`, Codex `AGENTS.override.md`, `CLAUDE.md`, Copilot instructions, agent skills, and agentic workflows—including recursive `@path` imports—locally, with zero runtime dependencies.
 
 [![CI](https://github.com/kotobuki09/instructree/actions/workflows/ci.yml/badge.svg)](https://github.com/kotobuki09/instructree/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f.svg)](LICENSE)
@@ -69,6 +69,7 @@ If Instructree catches a stale or conflicting agent instruction before your next
 - skill names that do not use portable kebab-case or match their folder, with nested namespace prefixes supported;
 - broken relative Markdown links inside agent instruction files;
 - instruction files that are manual-only because they have no path glob;
+- Codex-specific `AGENTS.override.md` files at repository or nested directory scope;
 - recursive Copilot `@path` imports that are missing, cyclic, duplicated, absolute, or escape the repository;
 - likely `always`/`never` conflicts in overlapping scopes, clearly labeled as heuristic.
 
@@ -83,6 +84,7 @@ The [real-world compatibility report](docs/compatibility.md) pins and audits 682
 | Surface | Files discovered | Path explanation |
 | --- | --- | --- |
 | Cross-agent | `AGENTS.md` at any depth | Directory scope |
+| OpenAI Codex | `AGENTS.override.md` at any depth | Directory scope |
 | Claude | `CLAUDE.md`, `CLAUDE.local.md`, `.claude/rules/*.md` | Directory scope or `paths` |
 | GitHub Copilot | `.github/copilot-instructions.md`, `*.instructions.md`, recursive `@path` imports | Repository scope, `applyTo`, and effective import graph |
 | Agent Skills | catalog-root `*/SKILL.md`; nested `skills/**/SKILL.md`, `.agents/skills/**/SKILL.md`, `.claude/skills/**/SKILL.md`, `.github/skills/**/SKILL.md` | Listed as on demand |
@@ -109,7 +111,7 @@ clean · 1 roots · 3 imported files · 0 errors
 
 The audit rejects absolute paths, repository escapes, symlink escapes, missing targets, cycles, oversized files, and graphs beyond its explicit safety limits. `GEMINI.md` and `*.instructions.md` references are not expanded because Copilot's documentation says it does not expand them.
 
-The formats are grounded in the current [VS Code custom-instructions documentation](https://github.com/microsoft/vscode-docs/blob/main/docs/agent-customization/custom-instructions.md), [GitHub customization matrix](https://docs.github.com/en/copilot/reference/customization-cheat-sheet), and [Agent Skills documentation](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills).
+The formats are grounded in the current [OpenAI Codex AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md), [VS Code custom-instructions documentation](https://github.com/microsoft/vscode-docs/blob/main/docs/agent-customization/custom-instructions.md), [GitHub customization matrix](https://docs.github.com/en/copilot/reference/customization-cheat-sheet), and [Agent Skills documentation](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills).
 
 ## Commands
 
@@ -175,6 +177,6 @@ For code scanning, run the CLI with `--sarif` and upload `instructree.sarif` wit
 
 ## Design boundaries
 
-Instructree is static analysis. It does not call a model, upload repository content, or claim to predict agent behavior. Discovery and precedence differ between clients and versions, so `explain` says what *may* apply and shows each format separately. Import expansion is explicitly labeled as GitHub Copilot CLI behavior; other clients' import semantics are not inferred. Conflict detection is intentionally conservative and reported as a warning for human review.
+Instructree is static analysis. It does not call a model, upload repository content, or claim to predict agent behavior. Discovery and precedence differ between clients and versions, so `explain` says what *may* apply and shows each format separately. `AGENTS.override.md` is reported as Codex-specific guidance; it is not expanded as a GitHub Copilot CLI `@path` import root. Import expansion is explicitly labeled as GitHub Copilot CLI behavior; other clients' import semantics are not inferred. Conflict detection is intentionally conservative and reported as a warning for human review.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the small, dependency-free development loop. If Instructree misses a real instruction format, [open an issue](https://github.com/kotobuki09/instructree/issues/new/choose) with a minimal example.

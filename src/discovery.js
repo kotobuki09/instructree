@@ -64,6 +64,9 @@ export function classify(relativePath) {
   const basename = path.posix.basename(normalized);
   const directory = path.posix.dirname(normalized) === "." ? "." : path.posix.dirname(normalized);
 
+  if (basename === "AGENTS.override.md") {
+    return { family: "Codex", kind: "always", scope: directory, patternKey: null };
+  }
   if (basename === "AGENTS.md") {
     return { family: "AGENTS.md", kind: "always", scope: directory, patternKey: null };
   }

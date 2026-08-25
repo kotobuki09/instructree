@@ -22,6 +22,8 @@ npx --yes github:kotobuki09/instructree#v0.8.0 init --code-scanning
 
 The generated workflow uses least-privilege permissions, avoids privileged SARIF uploads from forked pull requests, and refuses to overwrite an existing workflow.
 
+Instructree recognizes Codex-specific `AGENTS.override.md` files described in the official [OpenAI Codex AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md). They are shown with normal directory scope in `scan` and `explain`, while remaining outside GitHub Copilot CLI `@path` import expansion.
+
 ## Focused companion stack
 
 This is a deliberately small stack. Popularity is a filter, not a reason to load unrelated instructions into every task.

@@ -93,6 +93,18 @@ test("does not expand references from path-scoped instructions", async (context)
   assert.equal(result.imports.diagnostics.length, 0);
 });
 
+test("does not expand references from Codex AGENTS.override.md files", async (context) => {
+  const root = await fixture({
+    "AGENTS.override.md": "@missing-codex-only.md\n",
+    "src/app.js": "export {};\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const result = await scan(root);
+  assert.deepEqual(result.imports.roots, []);
+  assert.deepEqual(result.imports.diagnostics, []);
+});
+
 test("rejects an in-repository symlink whose target escapes the repository", async (context) => {
   const root = await fixture({ "AGENTS.md": "@linked.md\n" });
   const outside = await fixture({ "outside.md": "# Outside\n" });

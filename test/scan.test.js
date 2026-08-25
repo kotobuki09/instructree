@@ -48,6 +48,34 @@ test("discovers supported files and explains a target", async (context) => {
   ]);
 });
 
+test("discovers Codex AGENTS.override.md files with directory scope", async (context) => {
+  const root = await fixture({
+    "AGENTS.md": "# Root rules\n",
+    "AGENTS.override.md": "# Root Codex override\n",
+    "services/AGENTS.md": "# Service rules\n",
+    "services/AGENTS.override.md": "# Service Codex override\n",
+    "services/app.js": "export {};\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const result = await scan(root);
+  assert.deepEqual(
+    result.files
+      .filter((item) => item.path.endsWith("AGENTS.override.md"))
+      .map((item) => ({ path: item.path, family: item.family, kind: item.kind, scope: item.scope })),
+    [
+      { path: "AGENTS.override.md", family: "Codex", kind: "always", scope: "." },
+      { path: "services/AGENTS.override.md", family: "Codex", kind: "always", scope: "services" },
+    ],
+  );
+
+  const explained = await explain("services/app.js", root);
+  assert.deepEqual(
+    explained.applicable.map((item) => item.path),
+    ["AGENTS.md", "AGENTS.override.md", "services/AGENTS.md", "services/AGENTS.override.md"],
+  );
+});
+
 test("discovers skills stored as direct children of a catalog root", async (context) => {
   const root = await fixture({
     "review-code/SKILL.md": "---\nname: review-code\ndescription: Review changed code\n---\n# Review\n",
@@ -57,6 +85,40 @@ test("discovers skills stored as direct children of a catalog root", async (cont
   const result = await scan(root);
   assert.deepEqual(result.files.map((item) => item.path), ["review-code/SKILL.md"]);
   assert.equal(result.diagnostics.length, 0);
+});
+
+test("keeps cross-client AGENTS.md guidance visible beside Codex overrides", async (context) => {
+  const root = await fixture({
+    "AGENTS.md": "@docs/base.md\n",
+    "AGENTS.override.md": "@missing-codex-only.md\n",
+    "docs/base.md": "# Imported base\n",
+    "src/AGENTS.md": "# Source instructions\n",
+    "src/AGENTS.override.md": "@missing-source-codex-only.md\n",
+    "src/index.js": "export {};\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const result = await scan(root);
+  assert.deepEqual(result.files.map((item) => item.path), [
+    "AGENTS.md",
+    "AGENTS.override.md",
+    "src/AGENTS.md",
+    "src/AGENTS.override.md",
+  ]);
+  assert.deepEqual(result.imports.roots, ["AGENTS.md", "src/AGENTS.md"]);
+  assert.deepEqual(result.imports.diagnostics, []);
+  assert.equal(result.diagnostics.some((item) => item.code === "W301"), false);
+
+  const explained = await explain("src/index.js", root);
+  assert.deepEqual(explained.applicable.map((item) => item.path), [
+    "AGENTS.md",
+    "AGENTS.override.md",
+    "src/AGENTS.md",
+    "src/AGENTS.override.md",
+  ]);
+  assert.deepEqual(explained.effective, [
+    { path: "docs/base.md", importedBy: "AGENTS.md", profile: "github-copilot-cli" },
+  ]);
 });
 
 test("accepts namespaced names in nested skill catalogs", async (context) => {
