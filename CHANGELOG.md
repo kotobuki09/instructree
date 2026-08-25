@@ -4,6 +4,13 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+## 0.12.0 — 2026-08-26
+
+- Add `instructree skills [cwd] [--client codex]` for a read-only inventory of Codex user and repository-local skill candidate scopes.
+- Report duplicate names with source lines, metadata and filesystem failures, and deterministic logical paths without exposing absolute home or repository paths.
+- Match Codex's depth-bounded recursive discovery, hidden-directory pruning, symlink following, and canonical target deduplication while stating admin, system, config, and project-root limitations.
+- Estimate initial-list pressure from skill names, descriptions, and logical paths using the documented 8,000-character unknown-context reference and support YAML block-scalar descriptions.
+
 ## 0.11.0 — 2026-08-26
 
 - Add repeatable `--fallback <filename>` and `--max-bytes <non-negative-integer>` options to `explain --client codex`, corresponding to Codex's `project_doc_fallback_filenames` and `project_doc_max_bytes` settings.

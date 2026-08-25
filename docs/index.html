@@ -4,21 +4,22 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Instructree — map the instructions your coding agent will use</title>
-    <meta name="description" content="Trace Codex AGENTS.md precedence, audit coding-agent instruction files, and catch broken scopes, links, imports, and metadata locally with zero runtime dependencies.">
+    <meta name="description" content="Trace Codex AGENTS.md precedence, audit local skill scopes and prompt-list pressure, and catch broken coding-agent instructions with zero runtime dependencies.">
     <link rel="canonical" href="https://kotobuki09.github.io/instructree/">
     <link rel="describedby" type="text/markdown" href="https://kotobuki09.github.io/instructree/llms.txt">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Instructree — see the instruction tree before your coding agent does">
-    <meta property="og:description" content="Trace Codex precedence and audit AGENTS.md, CLAUDE.md, Copilot instructions, Agent Skills, and imports locally.">
+    <meta property="og:description" content="Trace Codex precedence and audit AGENTS.md, local skill scopes, CLAUDE.md, Copilot instructions, and imports locally.">
     <meta property="og:url" content="https://kotobuki09.github.io/instructree/">
     <meta property="og:image" content="https://raw.githubusercontent.com/kotobuki09/instructree/main/assets/social-preview.png">
     <meta property="og:image:width" content="1280">
     <meta property="og:image:height" content="640">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Instructree — see the instruction tree before your coding agent does">
-    <meta name="twitter:description" content="Trace Codex precedence and audit coding-agent instruction files locally.">
+    <meta name="twitter:description" content="Trace Codex precedence and audit local skill scopes and coding-agent instructions.">
     <meta name="twitter:image" content="https://raw.githubusercontent.com/kotobuki09/instructree/main/assets/social-preview.png">
     <meta name="theme-color" content="#0d1117">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="site.css">
     <script type="application/ld+json">
       {
@@ -27,10 +28,10 @@
         "name": "Instructree",
         "applicationCategory": "DeveloperApplication",
         "operatingSystem": "Windows, macOS, Linux",
-        "description": "A zero-dependency CLI and GitHub Action for mapping and linting coding-agent instruction files.",
+        "description": "A zero-dependency CLI and GitHub Action for mapping coding-agent instructions and auditing Codex local skill scopes.",
         "url": "https://kotobuki09.github.io/instructree/",
-        "downloadUrl": "https://github.com/kotobuki09/instructree/releases/tag/v0.11.0",
-        "softwareVersion": "0.11.0",
+        "downloadUrl": "https://github.com/kotobuki09/instructree/releases/tag/v0.12.0",
+        "softwareVersion": "0.12.0",
         "license": "https://opensource.org/license/mit",
         "codeRepository": "https://github.com/kotobuki09/instructree"
       }
@@ -54,14 +55,14 @@
         <div class="hero-copy">
           <p class="eyebrow"><span></span> Open source · zero runtime dependencies</p>
           <h1 id="hero-title">See the instruction tree <em>before your coding agent does.</em></h1>
-          <p class="hero-lede">Trace the repository instructions Codex selects for a target file. Audit <code>AGENTS.md</code>, Claude, Copilot, Agent Skills, and nested imports without uploading your code.</p>
+          <p class="hero-lede">Trace the repository instructions Codex selects for a target file. Audit local skill scopes, <code>AGENTS.md</code>, Claude, Copilot, and nested imports without uploading your code.</p>
           <div class="hero-actions">
             <a class="button primary" href="https://github.com/kotobuki09/instructree">Explore the repository <span aria-hidden="true">→</span></a>
-            <a class="button secondary" href="https://github.com/kotobuki09/instructree/releases/tag/v0.11.0">Release v0.11.0</a>
+            <a class="button secondary" href="https://github.com/kotobuki09/instructree/releases/tag/v0.12.0">Release v0.12.0</a>
           </div>
           <p class="install-label">Install the native Codex skill</p>
           <div class="copy-line" aria-label="Codex skill installation command">
-            <code>gh skill install kotobuki09/instructree instructree@v0.11.0 --agent codex --scope user</code>
+            <code>gh skill install kotobuki09/instructree instructree@v0.12.0 --agent codex --scope user</code>
           </div>
         </div>
 
@@ -86,7 +87,7 @@
       </section>
 
       <section class="proof-strip" id="proof" aria-label="Verification evidence">
-        <div><strong>48</strong><span>test cases</span></div>
+        <div><strong>56</strong><span>test cases</span></div>
         <div><strong>9</strong><span>CI environments</span></div>
         <div><strong>682</strong><span>public files audited</span></div>
         <div><strong>0</strong><span>runtime dependencies</span></div>
@@ -106,11 +107,16 @@
           </article>
           <article>
             <p class="feature-number">02</p>
+            <h3>Audit Codex skill scopes</h3>
+            <p>Inventory user and repository candidates, duplicate names, malformed metadata, and initial-list pressure with redacted paths.</p>
+          </article>
+          <article>
+            <p class="feature-number">03</p>
             <h3>Audit the whole surface</h3>
             <p>Find broken metadata, links, path scopes, duplicate skill names, unsafe imports, and conservative instruction conflicts.</p>
           </article>
           <article>
-            <p class="feature-number">03</p>
+            <p class="feature-number">04</p>
             <h3>Enforce it in CI</h3>
             <p>Run as a zero-install GitHub Action or publish stable SARIF diagnostics to GitHub code scanning.</p>
           </article>
