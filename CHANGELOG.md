@@ -4,6 +4,8 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+- Keep `instructree skills` concise by default while preserving the full human-readable inventory behind `--all`; JSON remains complete and unchanged.
+
 ## 0.12.0 — 2026-08-26
 
 - Add `instructree skills [cwd] [--client codex]` for a read-only inventory of Codex user and repository-local skill candidate scopes.

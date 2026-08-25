@@ -29,8 +29,10 @@ Instructree recognizes Codex-specific `AGENTS.override.md` files described in th
 Before adding or troubleshooting skills, inspect the user and repository candidate directories from a checkout:
 
 ```bash
-instructree skills . --client codex --json
+instructree skills . --client codex
 ```
+
+The concise default includes scope counts and every actionable finding. Add `--all` for the complete human-readable candidate inventory or `--json` for the unchanged structured object.
 
 The report includes the user `~/.agents/skills` catalog and every repository-local `.agents/skills` candidate scope from the current directory to the repository root. It recursively scans each depth-bounded root, follows symlinked skill folders, deduplicates canonical targets, skips hidden descendants, and keeps paths logical instead of exposing absolute home directories. It highlights possible duplicate names with source lines, missing or malformed `name`/`description` metadata, scan failures, and an approximate initial-list character estimate that includes each skill's name, description, and logical path. The estimate is compared with the documented 8,000-character reference used when the context window is unknown; Codex otherwise uses at most 2% of the model context, which can differ. `cwd` defaults to the current directory, and `--home <home>` is an optional testing or inspection override. This command is read-only, excludes admin/system skills, and does not read `~/.codex/config.toml`; it therefore cannot report config-enabled state, configured project-root markers, or the exact skills loaded for a run. Semantics are grounded in the official [Codex skills documentation](https://developers.openai.com/codex/skills) and the pinned Codex [discovery](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/discovery.rs), [root resolution](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/host_roots.rs), and [merge](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/host_merge.rs) implementations.
 

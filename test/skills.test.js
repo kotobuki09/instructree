@@ -84,6 +84,7 @@ test("skills CLI emits deterministic JSON and exposes the audit in help", async 
   await writeFiles(repository, {
     ".git/HEAD": "ref: refs/heads/main\n",
     ".agents/skills/repo-skill/SKILL.md": "---\nname: repo-skill\ndescription: Repository helper.\n---\n",
+    ".agents/skills/clean/SKILL.md": "---\nname: clean\ndescription: Clean repository helper.\n---\n",
     "nested/.agents/skills/repo-copy/SKILL.md": "---\nname: repo-skill\ndescription: Nested copy.\n---\n",
     "nested/.agents/skills/mismatch/SKILL.md": "---\nname: another-name\ndescription: Mismatched folder.\n---\n",
   });
@@ -95,10 +96,12 @@ test("skills CLI emits deterministic JSON and exposes the audit in help", async 
   const implicit = [];
   const omittedCwd = [];
   const human = [];
+  const expanded = [];
   const exitCode = await run(["skills", cwd, "--home", home, "--client", "codex", "--json"], { log: (value) => first.push(value) });
   await run(["skills", cwd, "--home", home, "--client", "codex", "--json"], { log: (value) => second.push(value) });
   await run(["skills", cwd, "--home", home, "--json"], { log: (value) => implicit.push(value) });
   await run(["skills", cwd, "--home", home], { log: (value) => human.push(value) });
+  await run(["skills", cwd, "--home", home, "--all"], { log: (value) => expanded.push(value) });
   const originalCwd = process.cwd();
   try {
     process.chdir(cwd);
@@ -113,15 +116,20 @@ test("skills CLI emits deterministic JSON and exposes the audit in help", async 
   assert.equal(exitCode, 0);
   assert.equal(first[0], second[0]);
   assert.equal(first[0], implicit[0]);
-  assert.match(help[0], /instructree skills \[cwd\] \[--home <home>\] \[--client codex\]/);
+  assert.match(help[0], /instructree skills \[cwd\] \[--home <home>\] \[--client codex\] \[--all \| --json\]/);
   assert.equal(JSON.parse(omittedCwd[0]).repository.currentDirectory, "nested");
   assert.ok(JSON.parse(first[0]).skills.some((skill) => skill.name === "repo-skill"));
   assert.equal(JSON.parse(first[0]).duplicates[0].occurrences[0].line, 2);
   assert.match(human[0], /possible duplicate skill names/);
   assert.match(human[0], /repo-skill\/SKILL\.md:2/);
   assert.match(human[0], /metadata warnings/);
+  assert.doesNotMatch(human[0], /clean\/SKILL\.md/);
+  assert.match(expanded[0], /clean\/SKILL\.md/);
+  assert.match(human[0], /2 skill candidates · full inventory omitted/);
   await assert.rejects(() => run(["skills", cwd, "--client", "claude"]), /unknown client: claude/);
   await assert.rejects(() => run(["skills", cwd, "--strict"]), /audit signals are report data/);
+  await assert.rejects(() => run(["scan", repository, "--all"]), /--all can only be used with skills/);
+  await assert.rejects(() => run(["skills", cwd, "--all", "--json"]), /--all and --json cannot be used together/);
   assert.deepEqual(JSON.parse(first[0]).provenance.limitations, [
     "Does not include Codex admin or system skills.",
     "Does not read ~/.codex/config.toml, so local skill enable or disable state is unknown.",

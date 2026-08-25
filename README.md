@@ -46,8 +46,10 @@ npx --yes github:kotobuki09/instructree#v0.12.0 explain src/api/client.ts --clie
 Audit Codex user and repository-local skill candidate scopes (the report is read-only and redacts absolute paths):
 
 ```bash
-instructree skills . --client codex --json
+instructree skills . --client codex
 ```
+
+The default report keeps scope counts and every actionable finding concise. Add `--all` for the complete human-readable inventory or `--json` for the unchanged structured result.
 
 Install from GitHub if you want the command everywhere:
 
@@ -124,7 +126,7 @@ The formats are grounded in the current [OpenAI Codex AGENTS.md guide](https://l
 ```text
 instructree [scan] [root] [--json | --sarif] [--strict]
 instructree imports [root] [--json] [--strict]
-instructree skills [cwd] [--home <home>] [--client codex] [--json]
+instructree skills [cwd] [--home <home>] [--client codex] [--all | --json]
 instructree explain <file> [--root <root>] [--client codex [--fallback <name>]... [--max-bytes <n>] | --effective] [--json]
 instructree init [root] [--code-scanning]
 instructree --help | --version

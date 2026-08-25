@@ -15,7 +15,7 @@ function usage() {
 Usage:
   instructree [scan] [root] [--json | --sarif] [--strict]
   instructree imports [root] [--json] [--strict]
-  instructree skills [cwd] [--home <home>] [--client codex] [--json]
+  instructree skills [cwd] [--home <home>] [--client codex] [--all | --json]
   instructree explain <file> [--root <root>] [--client codex [--fallback <name>]... [--max-bytes <n>] | --effective] [--json]
   instructree init [root] [--code-scanning]
   instructree --help | --version
@@ -37,6 +37,7 @@ function parseArguments(argv) {
     fallbackFilenames: [],
     maxBytes: null,
     codeScanning: false,
+    all: false,
     root: null,
     target: null,
     home: null,
@@ -67,6 +68,7 @@ function parseArguments(argv) {
       if (!Number.isSafeInteger(options.maxBytes)) throw new Error("--max-bytes requires a non-negative integer");
     }
     else if (argument === "--code-scanning") options.codeScanning = true;
+    else if (argument === "--all") options.all = true;
     else if (argument === "--root") {
       options.root = argv[index + 1];
       index += 1;
@@ -117,6 +119,12 @@ function parseArguments(argv) {
   }
   if (options.command === "skills" && options.strict) {
     throw new Error("skills does not accept --strict; audit signals are report data");
+  }
+  if (options.all && options.command !== "skills") {
+    throw new Error("--all can only be used with skills");
+  }
+  if (options.all && options.json) {
+    throw new Error("--all and --json cannot be used together; JSON already contains the full inventory");
   }
   if (options.json && options.sarif) {
     throw new Error("--json and --sarif cannot be used together");
@@ -287,7 +295,7 @@ export async function run(argv, io = console) {
       : options.json
         ? jsonResult(result, options.command)
         : options.command === "skills"
-          ? formatSkills(result)
+          ? formatSkills(result, { showAll: options.all })
           : options.command === "explain"
           ? formatExplain(result, options.effective)
           : options.command === "imports"

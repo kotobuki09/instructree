@@ -144,7 +144,7 @@ export function formatImports(result) {
   return lines.join("\n");
 }
 
-export function formatSkills(result) {
+export function formatSkills(result, { showAll = false } = {}) {
   const lines = [
     `${bold("instructree skills")} ${dim("· Codex local skill-scope audit")}`,
     `${dim("repository cwd:")} ${result.repository.currentDirectory}`,
@@ -156,6 +156,10 @@ export function formatSkills(result) {
     if (!scope.exists) lines.push(dim("└─ not present"));
     else if (!scope.isDirectory) lines.push(red("└─ not a directory"));
     else if (scope.skills.length === 0) lines.push(dim("└─ no SKILL.md files found"));
+    else if (!showAll) {
+      const noun = scope.skills.length === 1 ? "skill candidate" : "skill candidates";
+      lines.push(dim(`└─ ${scope.skills.length} ${noun} · full inventory omitted`));
+    }
     else scope.skills.forEach((skill, index) => {
       const connector = index === scope.skills.length - 1 ? "└─" : "├─";
       const status = skill.metadata.valid ? "valid" : `${skill.metadata.failures.length} metadata issue${skill.metadata.failures.length === 1 ? "" : "s"}`;

@@ -21,5 +21,5 @@ Use Instructree to inspect the exact configured Codex AGENTS.md and AGENTS.overr
 ## Try it
 
 - [CLI install and examples](https://github.com/kotobuki09/instructree#try-it): Run the pinned release without an API key or repository upload.
-- [Codex local-scope audit](https://github.com/kotobuki09/instructree#commands): Inspect user and repository-local `.agents/skills` candidate scopes, duplicates, metadata, and the approximate initial-list character estimate with `instructree skills . --client codex --json`.
+- [Codex local-scope audit](https://github.com/kotobuki09/instructree#commands): Inspect user and repository-local `.agents/skills` candidate scopes, duplicates, metadata, and prompt-list pressure concisely with `instructree skills . --client codex`; add `--all` or `--json` for the full inventory.
 - [GitHub Action](https://github.com/kotobuki09/instructree#ci): Add deterministic instruction linting to pull requests.
