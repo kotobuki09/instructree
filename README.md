@@ -131,11 +131,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: kotobuki09/instructree@v0.4.0
         with:
-          node-version: 22
-      - run: npx --yes github:kotobuki09/instructree --strict
+          strict: true
 ```
+
+The action runs directly on Node 24, needs no dependency-install step, and turns diagnostics into file-and-line annotations. Set `root` to scan one repository subdirectory.
 
 ## Design boundaries
 
