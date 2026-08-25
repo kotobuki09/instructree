@@ -4,6 +4,8 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+## 0.16.0 — 2026-08-26
+
 - Add `instructree doctor [cwd]` for one share-safe Codex pre-session report covering supported user project settings, user instructions, the current project chain, and summarized skill state.
 - Honor supported user `project_root_markers`, `project_doc_fallback_filenames`, and `project_doc_max_bytes` while failing closed on unsupported relevant syntax and redacting absolute paths.
 
