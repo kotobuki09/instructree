@@ -29,8 +29,8 @@
         "operatingSystem": "Windows, macOS, Linux",
         "description": "A zero-dependency CLI and GitHub Action for mapping and linting coding-agent instruction files.",
         "url": "https://kotobuki09.github.io/instructree/",
-        "downloadUrl": "https://github.com/kotobuki09/instructree/releases/tag/v0.10.0",
-        "softwareVersion": "0.10.0",
+        "downloadUrl": "https://github.com/kotobuki09/instructree/releases/tag/v0.11.0",
+        "softwareVersion": "0.11.0",
         "license": "https://opensource.org/license/mit",
         "codeRepository": "https://github.com/kotobuki09/instructree"
       }
@@ -57,11 +57,11 @@
           <p class="hero-lede">Trace the repository instructions Codex selects for a target file. Audit <code>AGENTS.md</code>, Claude, Copilot, Agent Skills, and nested imports without uploading your code.</p>
           <div class="hero-actions">
             <a class="button primary" href="https://github.com/kotobuki09/instructree">Explore the repository <span aria-hidden="true">→</span></a>
-            <a class="button secondary" href="https://github.com/kotobuki09/instructree/releases/tag/v0.10.0">Release v0.10.0</a>
+            <a class="button secondary" href="https://github.com/kotobuki09/instructree/releases/tag/v0.11.0">Release v0.11.0</a>
           </div>
           <p class="install-label">Install the native Codex skill</p>
           <div class="copy-line" aria-label="Codex skill installation command">
-            <code>gh skill install kotobuki09/instructree instructree@v0.10.0 --agent codex --scope user</code>
+            <code>gh skill install kotobuki09/instructree instructree@v0.11.0 --agent codex --scope user</code>
           </div>
         </div>
 
@@ -71,10 +71,10 @@
             <span class="terminal-title">~/acme-app</span>
           </div>
           <div class="terminal-body">
-            <p><span class="prompt">$</span> instructree explain src/api/client.ts <span class="accent">--client codex</span></p>
+            <p><span class="prompt">$</span> instructree explain src/api/client.ts <span class="accent">--client codex --fallback PROJECT.md</span></p>
             <div class="terminal-gap"></div>
             <p class="bright">Codex project chain</p>
-            <p class="muted">applies, broad → specific</p>
+            <p class="muted">selected, broad → specific</p>
             <ol>
               <li><span>AGENTS.override.md</span><small>repository-wide</small></li>
               <li><span>src/AGENTS.md</span><small>directory scope: src/</small></li>
@@ -86,7 +86,7 @@
       </section>
 
       <section class="proof-strip" id="proof" aria-label="Verification evidence">
-        <div><strong>39</strong><span>passing tests</span></div>
+        <div><strong>48</strong><span>test cases</span></div>
         <div><strong>9</strong><span>CI environments</span></div>
         <div><strong>682</strong><span>public files audited</span></div>
         <div><strong>0</strong><span>runtime dependencies</span></div>
@@ -102,7 +102,7 @@
           <article>
             <p class="feature-number">01</p>
             <h3>Trace Codex precedence</h3>
-            <p>Select the first non-empty <code>AGENTS.override.md</code> or <code>AGENTS.md</code> in each directory from the repository root to your target.</p>
+            <p>Select the first existing <code>AGENTS.override.md</code>, <code>AGENTS.md</code>, or configured fallback in each directory, then apply Codex's shared byte budget.</p>
           </article>
           <article>
             <p class="feature-number">02</p>

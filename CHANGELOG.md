@@ -4,9 +4,12 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+## 0.11.0 — 2026-08-26
+
 - Add repeatable `--fallback <filename>` and `--max-bytes <non-negative-integer>` options to `explain --client codex`, corresponding to Codex's `project_doc_fallback_filenames` and `project_doc_max_bytes` settings.
 - Match Codex candidate selection by choosing the first existing regular file per directory, including an empty file that blocks later candidates.
-- Report selected, included, and truncated byte metadata for the combined root-to-target project instruction budget.
+- Report selected, empty, included, and truncated byte metadata for the combined root-to-target project instruction budget.
+- Reject unsafe fallback paths and repository-escaping instruction symlinks while keeping all analysis local.
 
 ## 0.10.0 — 2026-08-26
 
