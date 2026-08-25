@@ -20,6 +20,46 @@ function parseInlineList(value) {
     .filter(Boolean);
 }
 
+function blockScalarIndicator(value) {
+  const match = value.trim().match(/^([>|])([+-]?)(?:\s+#.*)?$/);
+  return match ? { style: match[1], chomping: match[2] } : null;
+}
+
+function parseBlockScalar(lines, start, end, indicator) {
+  const blockLines = [];
+  let contentIndent = null;
+  let index = start + 1;
+
+  for (; index < end; index += 1) {
+    const raw = lines[index];
+    if (raw.trim() === "") {
+      blockLines.push("");
+      continue;
+    }
+
+    const indent = raw.match(/^\s*/)[0].length;
+    if (indent === 0 || (contentIndent !== null && indent < contentIndent)) break;
+    contentIndent ??= indent;
+    blockLines.push(raw.slice(contentIndent));
+  }
+
+  let value;
+  if (indicator.style === ">") {
+    value = "";
+    for (const line of blockLines) {
+      if (line === "") value += "\n";
+      else if (value && !value.endsWith("\n")) value += " ";
+      value += line;
+    }
+  } else {
+    value = blockLines.join("\n");
+  }
+
+  if (indicator.chomping === "-") value = value.replace(/\n+$/g, "");
+  else if (indicator.chomping !== "+") value = value.replace(/\n*$/g, "") + (blockLines.length > 0 ? "\n" : "");
+  return { value, nextIndex: index - 1 };
+}
+
 export function parseFrontmatter(content) {
   const lines = content.replace(/\r\n/g, "\n").split("\n");
   if (lines[0]?.trim() !== "---") {
@@ -60,6 +100,15 @@ export function parseFrontmatter(content) {
       const [, key, rawValue = ""] = topLevel;
       if (Object.hasOwn(data, key)) {
         errors.push({ line: index + 1, message: `duplicate frontmatter key '${key}'` });
+      }
+      const blockIndicator = blockScalarIndicator(rawValue);
+      if (blockIndicator) {
+        const block = parseBlockScalar(lines, index, end, blockIndicator);
+        data[key] = block.value;
+        keyLines[key] = index + 1;
+        currentKey = key;
+        index = block.nextIndex;
+        continue;
       }
       const inlineList = parseInlineList(rawValue);
       data[key] = inlineList ?? unquote(rawValue);

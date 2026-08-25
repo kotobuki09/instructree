@@ -15,7 +15,7 @@ function usage() {
 Usage:
   instructree [scan] [root] [--json | --sarif] [--strict]
   instructree imports [root] [--json] [--strict]
-  instructree skills <cwd> [--home <home>] [--client codex] [--json]
+  instructree skills [cwd] [--home <home>] [--client codex] [--json]
   instructree explain <file> [--root <root>] [--client codex [--fallback <name>]... [--max-bytes <n>] | --effective] [--json]
   instructree init [root] [--code-scanning]
   instructree --help | --version
@@ -112,11 +112,11 @@ function parseArguments(argv) {
   if (options.home && options.command !== "skills") {
     throw new Error("--home can only be used with skills");
   }
-  if (options.command === "skills" && options.client && options.client !== "codex") {
-    throw new Error(`unknown skills client: ${options.client}`);
-  }
   if (options.command === "skills" && (options.effective || options.fallbackFilenames.length > 0 || options.maxBytes !== null)) {
     throw new Error("skills does not accept explain options");
+  }
+  if (options.command === "skills" && options.strict) {
+    throw new Error("skills does not accept --strict; audit signals are report data");
   }
   if (options.json && options.sarif) {
     throw new Error("--json and --sarif cannot be used together");

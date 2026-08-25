@@ -154,6 +154,7 @@ export function formatSkills(result) {
     const label = scope.scope === "user" ? "user scope" : `repository scope · ${scope.directory}`;
     lines.push(cyan(`${label} · ${scope.path}`));
     if (!scope.exists) lines.push(dim("└─ not present"));
+    else if (!scope.isDirectory) lines.push(red("└─ not a directory"));
     else if (scope.skills.length === 0) lines.push(dim("└─ no SKILL.md files found"));
     else scope.skills.forEach((skill, index) => {
       const connector = index === scope.skills.length - 1 ? "└─" : "├─";
@@ -169,7 +170,7 @@ export function formatSkills(result) {
   );
   if (result.duplicates.length > 0) {
     lines.push("", yellow("possible duplicate skill names"));
-    result.duplicates.forEach((duplicate) => lines.push(`- ${duplicate.name} · ${duplicate.occurrences.map((item) => item.path).join(", ")}`));
+    result.duplicates.forEach((duplicate) => lines.push(`- ${duplicate.name} · ${duplicate.occurrences.map((item) => `${item.path}:${item.line ?? "?"}`).join(", ")}`));
   }
   if (result.metadataFailures.length > 0) {
     lines.push("", yellow("metadata failures"));
@@ -183,6 +184,8 @@ export function formatSkills(result) {
     lines.push("", red("scan errors"));
     result.scanErrors.forEach((error) => lines.push(`- ${error.path} · ${error.message}`));
   }
+  lines.push("", dim("limitations"));
+  result.provenance.limitations.forEach((limitation) => lines.push(dim(`- ${limitation}`)));
   lines.push("", dim(`Read-only candidate-scope audit; source: ${result.provenance.source}`));
   return lines.join("\n");
 }

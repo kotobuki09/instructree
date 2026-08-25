@@ -3,7 +3,9 @@ import path from "node:path";
 import { parseFrontmatter } from "./frontmatter.js";
 
 const CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS = 8000;
-const IGNORED_DIRECTORIES = new Set([".git", ".hg", ".svn", "node_modules", "vendor"]);
+const CODEX_MAX_SCAN_DEPTH = 6;
+const CODEX_MAX_DIRECTORIES_PER_ROOT = 2000;
+const CODEX_MAX_ENTRIES_PER_ROOT = 20_000;
 const CODEX_SKILLS_SOURCE = "https://developers.openai.com/codex/skills";
 
 function normalize(relativePath) {
@@ -23,9 +25,9 @@ async function hasEntry(target) {
 async function findRepositoryRoot(start) {
   let current = start;
   while (true) {
-    if (await hasEntry(path.join(current, ".git"))) return current;
+    if (await hasEntry(path.join(current, ".git"))) return { root: current, markerFound: true };
     const parent = path.dirname(current);
-    if (parent === current) return start;
+    if (parent === current) return { root: start, markerFound: false };
     current = parent;
   }
 }
@@ -109,68 +111,87 @@ function metadataReport(scope, relativePath, content) {
       valid: failures.length === 0,
       failures,
       warnings,
+      nameLine: parsed.keyLines.name ?? null,
     },
   };
 }
 
-async function discoverScope(scope) {
+function logicalScanPath(scope, relativePath = "") {
+  return relativePath ? displaySkillPath(scope, relativePath) : scopePath(scope);
+}
+
+async function discoverScope(scope, seenCanonicalSkillTargets) {
   const skills = [];
   const errors = [];
   let exists = false;
   let isDirectory = false;
 
   try {
-    const stat = await fs.stat(scope.absoluteRoot);
+    await fs.lstat(scope.absoluteRoot);
     exists = true;
-    isDirectory = stat.isDirectory();
   } catch (error) {
-    if (error.code !== "ENOENT") throw error;
+    if (error.code === "ENOENT") return { exists, isDirectory, skills, errors, truncated: false };
+    errors.push({
+      code: "scope-read-failure",
+      path: scopePath(scope),
+      message: `could not inspect skill scope: ${error.code ?? "error"}`,
+    });
+    return { exists, isDirectory, skills, errors, truncated: false };
   }
-  if (!exists || !isDirectory) return { exists, isDirectory, skills, errors };
 
-  let entries;
   try {
-    entries = await fs.readdir(scope.absoluteRoot, { withFileTypes: true });
+    isDirectory = (await fs.stat(scope.absoluteRoot)).isDirectory();
   } catch (error) {
     errors.push({
-      path: scope.kind === "user" ? "~/.agents/skills" : scopePath(scope),
-      message: `could not read skill directory: ${error.code ?? "error"}`,
+      code: "scope-read-failure",
+      path: scopePath(scope),
+      message: `could not inspect skill scope: ${error.code ?? "error"}`,
     });
-    return { exists, isDirectory, skills, errors };
+    return { exists, isDirectory, skills, errors, truncated: false };
   }
-  entries.sort((left, right) => left.name.localeCompare(right.name));
 
-  for (const entry of entries) {
-    if (IGNORED_DIRECTORIES.has(entry.name)) continue;
-    const skillDirectory = path.join(scope.absoluteRoot, entry.name);
-    let directoryStat;
-    try {
-      directoryStat = await fs.stat(skillDirectory);
-    } catch (error) {
-      if (error.code === "ENOENT") continue;
-      errors.push({
-        path: displaySkillPath(scope, entry.name),
-        message: `could not inspect skill folder: ${error.code ?? "error"}`,
-      });
-      continue;
-    }
-    if (!directoryStat.isDirectory()) continue;
+  if (!isDirectory) {
+    errors.push({
+      code: "scope-not-directory",
+      path: scopePath(scope),
+      message: "skill scope exists but is not a directory",
+    });
+    return { exists, isDirectory, skills, errors, truncated: false };
+  }
 
-    const relativePath = `${normalize(entry.name)}/SKILL.md`;
-    const skillFile = path.join(skillDirectory, "SKILL.md");
-    let skillStat;
+  const limits = {
+    directoryCount: 0,
+    entryCount: 0,
+    truncated: false,
+    directoryLimitReported: false,
+    entryLimitReported: false,
+  };
+  const addError = (relativePath, message, code = "scan-failure") => {
+    errors.push({ code, path: logicalScanPath(scope, relativePath), message });
+  };
+  const reportDirectoryLimit = (relativePath) => {
+    if (limits.directoryLimitReported) return;
+    limits.directoryLimitReported = true;
+    limits.truncated = true;
+    addError(relativePath, `skill scan reached directory limit (${CODEX_MAX_DIRECTORIES_PER_ROOT})`, "scan-limit");
+  };
+  const reportEntryLimit = (relativePath) => {
+    if (limits.entryLimitReported) return;
+    limits.entryLimitReported = true;
+    limits.truncated = true;
+    addError(relativePath, `skill scan reached entry limit (${CODEX_MAX_ENTRIES_PER_ROOT})`, "scan-limit");
+  };
+
+  const readSkill = async (skillFile, relativePath) => {
+    let canonicalSkillFile;
     try {
-      skillStat = await fs.stat(skillFile);
+      canonicalSkillFile = await fs.realpath(skillFile);
     } catch (error) {
-      if (error.code !== "ENOENT") {
-        errors.push({
-          path: displaySkillPath(scope, relativePath),
-          message: `could not inspect skill metadata: ${error.code ?? "error"}`,
-        });
-      }
-      continue;
+      if (error.code !== "ENOENT") addError(relativePath, `could not resolve skill metadata: ${error.code ?? "error"}`);
+      return;
     }
-    if (!skillStat.isFile()) continue;
+    if (seenCanonicalSkillTargets.has(canonicalSkillFile)) return;
+    seenCanonicalSkillTargets.add(canonicalSkillFile);
 
     try {
       const content = await fs.readFile(skillFile, "utf8");
@@ -182,15 +203,76 @@ async function discoverScope(scope) {
         order: scope.order,
       });
     } catch (error) {
-      errors.push({
-        path: displaySkillPath(scope, relativePath),
-        message: `could not read skill metadata: ${error.code ?? "error"}`,
-      });
+      addError(relativePath, `could not read skill metadata: ${error.code ?? "error"}`);
     }
-  }
+  };
+
+  const walk = async (directory, relativeDirectory, ancestors) => {
+    if (limits.directoryCount >= CODEX_MAX_DIRECTORIES_PER_ROOT) {
+      reportDirectoryLimit(relativeDirectory);
+      return;
+    }
+
+    let canonicalDirectory;
+    try {
+      canonicalDirectory = await fs.realpath(directory);
+    } catch (error) {
+      addError(relativeDirectory, `could not resolve skill directory: ${error.code ?? "error"}`);
+      return;
+    }
+    if (ancestors.has(canonicalDirectory)) {
+      addError(relativeDirectory, "directory cycle detected; skipped recursive scan", "scan-cycle");
+      return;
+    }
+    limits.directoryCount += 1;
+    const nextAncestors = new Set(ancestors);
+    nextAncestors.add(canonicalDirectory);
+
+    let entries;
+    try {
+      entries = await fs.readdir(directory, { withFileTypes: true });
+    } catch (error) {
+      addError(relativeDirectory, `could not read skill directory: ${error.code ?? "error"}`);
+      return;
+    }
+    entries.sort((left, right) => left.name.localeCompare(right.name));
+
+    for (const entry of entries) {
+      if (limits.entryCount >= CODEX_MAX_ENTRIES_PER_ROOT) {
+        reportEntryLimit(relativeDirectory);
+        break;
+      }
+      limits.entryCount += 1;
+      const relativeEntry = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name;
+      const relativeParts = relativeEntry.split("/");
+      if (entry.name.startsWith(".") && (entry.isDirectory() || entry.isSymbolicLink())) continue;
+
+      const absoluteEntry = path.join(directory, entry.name);
+      let entryStat;
+      try {
+        entryStat = await fs.stat(absoluteEntry);
+      } catch (error) {
+        if (error.code !== "ENOENT") addError(relativeEntry, `could not inspect skill entry: ${error.code ?? "error"}`);
+        continue;
+      }
+
+      if (entryStat.isDirectory()) {
+        if (relativeParts.length <= CODEX_MAX_SCAN_DEPTH - 1) {
+          await walk(absoluteEntry, relativeEntry, nextAncestors);
+        }
+        continue;
+      }
+      if (entry.name === "SKILL.md" && entryStat.isFile() && relativeParts.length <= CODEX_MAX_SCAN_DEPTH) {
+        await readSkill(absoluteEntry, relativeEntry);
+      }
+    }
+  };
+
+  await walk(scope.absoluteRoot, "", new Set());
 
   skills.sort((left, right) => left.path.localeCompare(right.path));
-  return { exists, isDirectory, skills, errors };
+  errors.sort((left, right) => left.path.localeCompare(right.path) || left.code.localeCompare(right.code) || left.message.localeCompare(right.message));
+  return { exists, isDirectory, skills, errors, truncated: limits.truncated };
 }
 
 function listingEstimate(skill) {
@@ -216,6 +298,7 @@ function duplicateReports(skills) {
       scope: skill.scope,
       scopeDirectory: skill.scopeDirectory,
       path: skill.path,
+      line: skill.metadata.nameLine,
     });
   }
   return [...byName.entries()]
@@ -239,7 +322,8 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
   const cwdStat = await fs.stat(absoluteCwd);
   if (!cwdStat.isDirectory()) throw new Error(`not a directory: ${absoluteCwd}`);
 
-  const repositoryRoot = await findRepositoryRoot(absoluteCwd);
+  const repository = await findRepositoryRoot(absoluteCwd);
+  const repositoryRoot = repository.root;
   const repositoryDirectories = [];
   let current = absoluteCwd;
   while (true) {
@@ -273,8 +357,9 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
   const scannedScopes = [];
   const allSkills = [];
   const scanErrors = [];
+  const seenCanonicalSkillTargets = new Set();
   for (const scope of scopes) {
-    const result = await discoverScope(scope);
+    const result = await discoverScope(scope, seenCanonicalSkillTargets);
     const publicSkills = result.skills.map(withoutOrder);
     scannedScopes.push({
       scope: scope.kind,
@@ -284,6 +369,8 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
       exists: result.exists,
       isDirectory: result.isDirectory,
       skillCount: publicSkills.length,
+      truncated: result.truncated,
+      scanErrorCount: result.errors.length,
       skills: publicSkills,
     });
     allSkills.push(...result.skills);
@@ -344,7 +431,7 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
     repository: {
       root: "<repository>",
       currentDirectory: normalize(path.relative(repositoryRoot, absoluteCwd)) || ".",
-      repositoryMarkerFound: repositoryRoot !== absoluteCwd || await hasEntry(path.join(repositoryRoot, ".git")),
+      repositoryMarkerFound: repository.markerFound,
     },
     scopes: scannedScopes,
     skills: allSkills.map(withoutOrder),
@@ -366,6 +453,7 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
       limitations: [
         "Does not include Codex admin or system skills.",
         "Does not read ~/.codex/config.toml, so local skill enable or disable state is unknown.",
+        "Uses the nearest .git marker rather than configured Codex project-root markers.",
         "Reports candidate discovery paths, not the exact skills loaded for a run.",
       ],
     },
