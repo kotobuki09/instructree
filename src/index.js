@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import { discover } from "./discovery.js";
 import { matchesGlob } from "./glob.js";
 import { analyze } from "./rules.js";
+import { buildImportGraph } from "./imports.js";
 
 function normalize(relativePath) {
   return relativePath.split(path.sep).join("/");
@@ -14,7 +15,11 @@ export async function scan(root = process.cwd()) {
   if (!stat.isDirectory()) throw new Error(`not a directory: ${absoluteRoot}`);
   const discovered = await discover(absoluteRoot);
   const result = await analyze(discovered);
-  return { root: absoluteRoot, ...result };
+  const imports = await buildImportGraph(absoluteRoot, result.files);
+  const diagnostics = [...result.diagnostics, ...imports.diagnostics].sort((left, right) =>
+    left.file.localeCompare(right.file) || left.line - right.line || left.code.localeCompare(right.code),
+  );
+  return { root: absoluteRoot, ...result, diagnostics, imports };
 }
 
 function isInsideScope(target, scope) {
@@ -48,5 +53,14 @@ export async function explain(target, root = process.cwd()) {
     const rightDepth = right.path.split("/").length;
     return leftDepth - rightDepth || left.path.localeCompare(right.path);
   });
-  return { ...result, target: relativeTarget, applicable, available };
+  const effective = [];
+  const seenEffective = new Set();
+  for (const file of applicable) {
+    for (const imported of result.imports.effectiveFiles[file.path] ?? []) {
+      if (imported === file.path || seenEffective.has(imported)) continue;
+      effective.push({ path: imported, importedBy: file.path, profile: result.imports.profile });
+      seenEffective.add(imported);
+    }
+  }
+  return { ...result, target: relativeTarget, applicable, available, effective };
 }

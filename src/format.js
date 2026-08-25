@@ -53,7 +53,7 @@ export function formatScan(result) {
   return lines.join("\n");
 }
 
-export function formatExplain(result) {
+export function formatExplain(result, showEffective = false) {
   const lines = [`${bold("instructree explain")} ${dim("·")} ${result.target}`, ""];
   if (result.applicable.length === 0) {
     lines.push(dim("No automatically applicable instruction files found."));
@@ -67,6 +67,60 @@ export function formatExplain(result) {
     lines.push("", cyan("available on demand"));
     result.available.forEach((file) => lines.push(`- ${file.path} ${dim(`[${file.family}]`)}`));
   }
+  if (showEffective) {
+    lines.push("", cyan("effective transitive imports · GitHub Copilot CLI"));
+    if (result.effective.length === 0) lines.push(dim("No imported instruction files."));
+    else result.effective.forEach((file) => lines.push(`- ${file.path} ${dim(`[from ${file.importedBy}]`)}`));
+  }
   lines.push("", dim("Static result: clients can differ in discovery and precedence behavior."));
+  return lines.join("\n");
+}
+
+export function formatImports(result) {
+  const lines = [`${bold("instructree imports")} ${dim("· GitHub Copilot CLI ·")} ${result.root}`, ""];
+  if (result.imports.roots.length === 0) {
+    lines.push(dim("No Copilot-compatible import roots found."));
+  } else {
+    const adjacency = new Map();
+    for (const edge of result.imports.edges) {
+      if (!adjacency.has(edge.from)) adjacency.set(edge.from, []);
+      adjacency.get(edge.from).push(edge);
+    }
+
+    function render(current, prefix, ancestors) {
+      const children = adjacency.get(current) ?? [];
+      children.forEach((edge, index) => {
+        const last = index === children.length - 1;
+        const connector = last ? "└─" : "├─";
+        const label = edge.status === "valid" ? edge.to : `${edge.raw} [${edge.status}]`;
+        const cycle = edge.to && ancestors.has(edge.to);
+        lines.push(`${prefix}${connector} ${label}${cycle ? yellow(" [cycle]") : ""} ${dim(`:${edge.line}`)}`);
+        if (edge.status === "valid" && !cycle) {
+          render(edge.to, `${prefix}${last ? "   " : "│  "}`, new Set([...ancestors, edge.to]));
+        }
+      });
+    }
+
+    result.imports.roots.forEach((rootFile, index) => {
+      if (index > 0) lines.push("");
+      lines.push(cyan(rootFile));
+      render(rootFile, "", new Set([rootFile]));
+    });
+  }
+
+  if (result.imports.diagnostics.length > 0) {
+    lines.push("");
+    for (const item of result.imports.diagnostics) {
+      const marker = item.severity === "error" ? red("error") : item.severity === "warning" ? yellow("warn ") : dim("note ");
+      lines.push(`${marker} ${item.code} ${item.file}:${item.line}  ${item.message}`);
+    }
+  }
+
+  const imported = result.imports.nodes.filter((node) => !node.root).length;
+  const errors = result.imports.diagnostics.filter((item) => item.severity === "error").length;
+  const rootLabel = `${result.imports.roots.length} root${result.imports.roots.length === 1 ? "" : "s"}`;
+  const fileLabel = `${imported} imported file${imported === 1 ? "" : "s"}`;
+  const errorLabel = `${errors} error${errors === 1 ? "" : "s"}`;
+  lines.push("", `${errors > 0 ? red("failed") : "clean"} ${dim("·")} ${rootLabel} ${dim("·")} ${fileLabel} ${dim("·")} ${errorLabel}`);
   return lines.join("\n");
 }

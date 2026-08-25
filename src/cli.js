@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs/promises";
 import { explain, scan } from "./index.js";
-import { formatExplain, formatScan } from "./format.js";
+import { formatExplain, formatImports, formatScan } from "./format.js";
 
 const packagePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../package.json");
 
@@ -11,7 +11,8 @@ function usage() {
 
 Usage:
   instructree [scan] [root] [--json] [--strict]
-  instructree explain <file> [--root <root>] [--json]
+  instructree imports [root] [--json] [--strict]
+  instructree explain <file> [--root <root>] [--effective] [--json]
   instructree --help | --version
 
 Exit codes:
@@ -21,12 +22,13 @@ Exit codes:
 }
 
 function parseArguments(argv) {
-  const options = { command: "scan", json: false, strict: false, root: null, target: null };
+  const options = { command: "scan", json: false, strict: false, effective: false, root: null, target: null };
   const positional = [];
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--json") options.json = true;
     else if (argument === "--strict") options.strict = true;
+    else if (argument === "--effective") options.effective = true;
     else if (argument === "--root") {
       options.root = argv[index + 1];
       index += 1;
@@ -43,20 +45,28 @@ function parseArguments(argv) {
     if (!options.target) throw new Error("explain requires a target file");
     if (positional.length > 2) throw new Error(`unexpected argument: ${positional[2]}`);
   } else {
-    if (positional[0] === "scan") positional.shift();
+    if (["scan", "imports"].includes(positional[0])) options.command = positional.shift();
     options.root ??= positional[0] ?? process.cwd();
     if (positional.length > 1) throw new Error(`unexpected argument: ${positional[1]}`);
+  }
+  if (options.effective && options.command !== "explain") {
+    throw new Error("--effective can only be used with explain");
   }
   return options;
 }
 
-function jsonResult(result) {
+function jsonResult(result, command) {
+  if (command === "imports") {
+    return JSON.stringify({ root: result.root, ...result.imports }, null, 2);
+  }
   return JSON.stringify(
     {
       root: result.root,
       ...(result.target ? { target: result.target, applicable: result.applicable, available: result.available } : {}),
+      ...(result.target ? { effective: result.effective } : {}),
       files: result.files.map(({ absolutePath, content, frontmatter, ...file }) => file),
       diagnostics: result.diagnostics,
+      imports: result.imports,
     },
     null,
     2,
@@ -79,10 +89,19 @@ export async function run(argv, io = console) {
     options.command === "explain"
       ? await explain(options.target, options.root ?? process.cwd())
       : await scan(options.root);
-  io.log(options.json ? jsonResult(result) : options.command === "explain" ? formatExplain(result) : formatScan(result));
+  io.log(
+    options.json
+      ? jsonResult(result, options.command)
+      : options.command === "explain"
+        ? formatExplain(result, options.effective)
+        : options.command === "imports"
+          ? formatImports(result)
+          : formatScan(result),
+  );
 
-  const hasErrors = result.diagnostics.some((item) => item.severity === "error");
-  const hasWarnings = result.diagnostics.some((item) => item.severity === "warning");
+  const policyDiagnostics = options.command === "imports" ? result.imports.diagnostics : result.diagnostics;
+  const hasErrors = policyDiagnostics.some((item) => item.severity === "error");
+  const hasWarnings = policyDiagnostics.some((item) => item.severity === "warning");
   const exitCode = hasErrors || (options.strict && hasWarnings) ? 1 : 0;
   process.exitCode = exitCode;
   return exitCode;

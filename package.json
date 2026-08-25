@@ -1,6 +1,6 @@
 {
   "name": "instructree",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Map and lint the instructions your AI coding agents will actually use.",
   "type": "module",
   "bin": {
@@ -12,12 +12,13 @@
   "files": [
     "bin",
     "src",
+    "CHANGELOG.md",
     "LICENSE",
     "README.md"
   ],
   "scripts": {
     "test": "node --test",
-    "check": "node --check bin/instructree.js && node --check src/cli.js && node --check src/index.js",
+    "check": "node --check bin/instructree.js && node --check src/cli.js && node --check src/discovery.js && node --check src/format.js && node --check src/frontmatter.js && node --check src/glob.js && node --check src/imports.js && node --check src/index.js && node --check src/rules.js",
     "prepublishOnly": "npm test && npm run check"
   },
   "keywords": [
