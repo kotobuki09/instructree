@@ -2,7 +2,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs/promises";
 import { explain, scan } from "./index.js";
+import { auditCodexSkills } from "./skills.js";
 import { formatExplain, formatImports, formatScan } from "./format.js";
+import { formatSkills } from "./format.js";
 import { formatSarif } from "./sarif.js";
 
 const packagePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../package.json");
@@ -13,6 +15,7 @@ function usage() {
 Usage:
   instructree [scan] [root] [--json | --sarif] [--strict]
   instructree imports [root] [--json] [--strict]
+  instructree skills <cwd> [--home <home>] --client codex [--json]
   instructree explain <file> [--root <root>] [--client codex [--fallback <name>]... [--max-bytes <n>] | --effective] [--json]
   instructree init [root] [--code-scanning]
   instructree --help | --version
@@ -36,6 +39,7 @@ function parseArguments(argv) {
     codeScanning: false,
     root: null,
     target: null,
+    home: null,
   };
   const positional = [];
   for (let index = 0; index < argv.length; index += 1) {
@@ -67,6 +71,10 @@ function parseArguments(argv) {
       options.root = argv[index + 1];
       index += 1;
       if (!options.root) throw new Error("--root requires a directory");
+    } else if (argument === "--home") {
+      options.home = argv[index + 1];
+      index += 1;
+      if (!options.home) throw new Error("--home requires a directory");
     } else if (argument === "--help" || argument === "-h") options.command = "help";
     else if (argument === "--version" || argument === "-v") options.command = "version";
     else if (argument.startsWith("-")) throw new Error(`unknown option: ${argument}`);
@@ -79,7 +87,7 @@ function parseArguments(argv) {
     if (!options.target) throw new Error("explain requires a target file");
     if (positional.length > 2) throw new Error(`unexpected argument: ${positional[2]}`);
   } else {
-    if (["scan", "imports", "init"].includes(positional[0])) options.command = positional.shift();
+    if (["scan", "imports", "init", "skills"].includes(positional[0])) options.command = positional.shift();
     options.root ??= positional[0] ?? process.cwd();
     if (positional.length > 1) throw new Error(`unexpected argument: ${positional[1]}`);
   }
@@ -89,8 +97,8 @@ function parseArguments(argv) {
   if (options.client && options.client !== "codex") {
     throw new Error(`unknown client: ${options.client}`);
   }
-  if (options.client && options.command !== "explain") {
-    throw new Error("--client can only be used with explain");
+  if (options.client && !["explain", "skills"].includes(options.command)) {
+    throw new Error("--client can only be used with explain or skills");
   }
   if (options.effective && options.client) {
     throw new Error("--effective and --client cannot be used together");
@@ -100,6 +108,15 @@ function parseArguments(argv) {
   }
   if ((options.fallbackFilenames.length > 0 || options.maxBytes !== null) && options.client !== "codex") {
     throw new Error("--fallback and --max-bytes require --client codex");
+  }
+  if (options.home && options.command !== "skills") {
+    throw new Error("--home can only be used with skills");
+  }
+  if (options.command === "skills" && options.client && options.client !== "codex") {
+    throw new Error(`unknown skills client: ${options.client}`);
+  }
+  if (options.command === "skills" && (options.effective || options.fallbackFilenames.length > 0 || options.maxBytes !== null)) {
+    throw new Error("skills does not accept explain options");
   }
   if (options.json && options.sarif) {
     throw new Error("--json and --sarif cannot be used together");
@@ -212,6 +229,7 @@ jobs:
 }
 
 function jsonResult(result, command) {
+  if (command === "skills") return JSON.stringify(result, null, 2);
   if (command === "imports") {
     return JSON.stringify({ root: result.root, ...result.imports }, null, 2);
   }
@@ -251,7 +269,9 @@ export async function run(argv, io = console) {
   }
 
   const result =
-    options.command === "explain"
+    options.command === "skills"
+      ? await auditCodexSkills(options.root ?? process.cwd(), options.home ?? undefined)
+      : options.command === "explain"
       ? await explain(options.target, options.root ?? process.cwd(), {
           client: options.client,
           ...(options.client === "codex" ? { fallbackFilenames: options.fallbackFilenames } : {}),
@@ -266,14 +286,16 @@ export async function run(argv, io = console) {
       ? sarif
       : options.json
         ? jsonResult(result, options.command)
-        : options.command === "explain"
+        : options.command === "skills"
+          ? formatSkills(result)
+          : options.command === "explain"
           ? formatExplain(result, options.effective)
           : options.command === "imports"
             ? formatImports(result)
             : formatScan(result),
   );
 
-  const policyDiagnostics = options.command === "imports" ? result.imports.diagnostics : result.diagnostics;
+  const policyDiagnostics = options.command === "skills" ? [] : options.command === "imports" ? result.imports.diagnostics : result.diagnostics;
   const hasErrors = policyDiagnostics.some((item) => item.severity === "error");
   const hasWarnings = policyDiagnostics.some((item) => item.severity === "warning");
   const exitCode = hasErrors || (options.strict && hasWarnings) ? 1 : 0;

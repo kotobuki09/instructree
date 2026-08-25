@@ -24,6 +24,16 @@ The generated workflow uses least-privilege permissions, avoids privileged SARIF
 
 Instructree recognizes Codex-specific `AGENTS.override.md` files described in the official [OpenAI Codex AGENTS.md guide](https://learn.chatgpt.com/docs/agent-configuration/agents-md). They are shown with normal directory scope in `scan` and neutral `explain`, while `explain --client codex` resolves the first existing regular candidate per directory, even when that candidate is empty. Its JSON output reports the configured fallbacks, shared byte budget, included bytes, and truncation state. The empty-candidate and byte-budget details are checked against the pinned [Codex implementation](https://github.com/openai/codex/blob/9be8d6e1c3dbb145d2d7ac3ba46729340e6d8d40/codex-rs/core/src/agents_md.rs). Codex overrides remain outside GitHub Copilot CLI `@path` import expansion.
 
+## Audit the installed skill stack
+
+Before adding or troubleshooting skills, inspect the scopes Codex can see from a checkout:
+
+```bash
+instructree skills . --home "$HOME" --client codex --json
+```
+
+The report includes the user `~/.agents/skills` catalog and every active repository `.agents/skills` scope from the current directory to the repository root. It follows symlinked skill folders, keeps paths logical instead of exposing absolute home directories, and highlights possible duplicate names, missing or malformed `name`/`description` metadata, and a conservative estimate of skill-list pressure. The estimate uses the documented 8,000-character upper ceiling; it cannot predict model behavior or the exact context-derived limit. This command is read-only and never installs skills or uploads content. Semantics are grounded in the official [Codex skills documentation](https://developers.openai.com/codex/skills).
+
 ## Focused companion stack
 
 This is a deliberately small stack. Popularity is a filter, not a reason to load unrelated instructions into every task.

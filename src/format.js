@@ -143,3 +143,38 @@ export function formatImports(result) {
   lines.push("", `${errors > 0 ? red("failed") : "clean"} ${dim("·")} ${rootLabel} ${dim("·")} ${fileLabel} ${dim("·")} ${errorLabel}`);
   return lines.join("\n");
 }
+
+export function formatSkills(result) {
+  const lines = [
+    `${bold("instructree skills")} ${dim("· Codex installed-skills audit")}`,
+    `${dim("repository cwd:")} ${result.repository.currentDirectory}`,
+    "",
+  ];
+  for (const scope of result.scopes) {
+    const label = scope.scope === "user" ? "user scope" : `repository scope · ${scope.directory}`;
+    lines.push(cyan(`${label} · ${scope.path}`));
+    if (!scope.exists) lines.push(dim("└─ not present"));
+    else if (scope.skills.length === 0) lines.push(dim("└─ no SKILL.md files found"));
+    else scope.skills.forEach((skill, index) => {
+      const connector = index === scope.skills.length - 1 ? "└─" : "├─";
+      const status = skill.metadata.valid ? "valid" : `${skill.metadata.failures.length} metadata issue${skill.metadata.failures.length === 1 ? "" : "s"}`;
+      lines.push(`${connector} ${skill.path} ${dim(`[${skill.name ?? "unnamed"} · ${status}]`)}`);
+    });
+  }
+  lines.push(
+    "",
+    cyan("signals"),
+    `duplicate names: ${result.signals.duplicateCount} · metadata failures: ${result.signals.metadataFailureCount}`,
+    `skill-list pressure: ${result.pressure.status} · ${result.pressure.estimatedListingChars}/${result.pressure.budgetChars} chars`,
+  );
+  if (result.duplicates.length > 0) {
+    lines.push("", yellow("possible duplicate skill names"));
+    result.duplicates.forEach((duplicate) => lines.push(`- ${duplicate.name} · ${duplicate.occurrences.map((item) => item.path).join(", ")}`));
+  }
+  if (result.metadataFailures.length > 0) {
+    lines.push("", yellow("metadata failures"));
+    result.metadataFailures.forEach((failure) => lines.push(`- ${failure.path}:${failure.line} · ${failure.message}`));
+  }
+  lines.push("", dim(`Read-only audit; source: ${result.provenance.source}`));
+  return lines.join("\n");
+}
