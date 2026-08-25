@@ -2,6 +2,12 @@
 
 All notable changes to Instructree are documented here.
 
+## 0.4.0 — 2026-08-26
+
+- Add a dependency-free GitHub Action with native file-and-line annotations.
+- Add `root` and `strict` action inputs with repository-boundary validation.
+- Exercise the action itself across the full CI operating-system and Node matrix.
+
 ## 0.3.0 — 2026-08-26
 
 - Add a native Instructree skill for Codex and compatible coding agents.

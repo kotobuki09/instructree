@@ -1,0 +1,21 @@
+name: Instructree
+description: Map and lint the instructions your AI coding agents will use.
+author: kotobuki09
+
+branding:
+  icon: git-branch
+  color: green
+
+inputs:
+  root:
+    description: Repository-relative directory to scan.
+    required: false
+    default: .
+  strict:
+    description: Fail when warnings are found as well as errors.
+    required: false
+    default: "false"
+
+runs:
+  using: node24
+  main: src/action.js
