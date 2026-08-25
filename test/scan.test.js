@@ -22,13 +22,14 @@ test("discovers supported files and explains a target", async (context) => {
     ".github/copilot-instructions.md": "# Project rules\n",
     ".github/instructions/typescript.instructions.md": "---\napplyTo: '**/*.ts'\n---\n# TypeScript\n",
     ".agents/skills/review-code/SKILL.md": "---\nname: review-code\ndescription: Review changed code\n---\n# Review\n",
+    "skills/release-check/SKILL.md": "---\nname: release-check\ndescription: Check a release\n---\n# Release check\n",
     "src/index.ts": "export {};\n",
     "node_modules/demo/AGENTS.md": "# ignored\n",
   });
   context.after(() => fs.rm(root, { recursive: true, force: true }));
 
   const result = await scan(root);
-  assert.equal(result.files.length, 5);
+  assert.equal(result.files.length, 6);
   assert.ok(result.diagnostics.some((item) => item.code === "W301"));
 
   const explained = await explain("src/index.ts", root);
@@ -41,7 +42,10 @@ test("discovers supported files and explains a target", async (context) => {
       ".github/instructions/typescript.instructions.md",
     ],
   );
-  assert.deepEqual(explained.available.map((item) => item.path), [".agents/skills/review-code/SKILL.md"]);
+  assert.deepEqual(explained.available.map((item) => item.path), [
+    ".agents/skills/review-code/SKILL.md",
+    "skills/release-check/SKILL.md",
+  ]);
 });
 
 test("validates skill metadata and broken local links", async (context) => {

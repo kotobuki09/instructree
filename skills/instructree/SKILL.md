@@ -1,0 +1,36 @@
+---
+name: instructree
+description: Map, explain, and lint repository-scoped coding-agent instructions. Use when auditing AGENTS.md, CLAUDE.md, Copilot instructions, agent skills, custom agents, or instruction conflicts before changing code.
+metadata:
+  short-description: Audit coding-agent instruction scope
+---
+
+# Instructree
+
+Use Instructree to establish which instruction files exist, which may apply to a target, and whether their metadata or links are malformed.
+
+## Run the audit
+
+Work from the repository root. Prefer an already installed `instructree` command or the checked-out package's local binary. If neither is available, ask before downloading executable packages, then use the pinned release:
+
+```bash
+npx github:kotobuki09/instructree#v0.3.0 scan .
+```
+
+Do not add `--yes` unless the user has authorized non-interactive package downloads.
+
+Choose the narrowest command that answers the request:
+
+- `instructree scan . --json` inventories supported files and emits stable diagnostics.
+- `instructree explain <file> --root .` shows instructions that may apply to one target.
+- `instructree explain <file> --root . --effective` includes recursive Copilot CLI imports.
+- `instructree imports . --json` audits the recursive `@path` graph.
+- Add `--strict` only when warnings should fail the check.
+
+## Interpret the result
+
+Report file paths, line numbers, diagnostic codes, and the command's exit status. Separate schema or path errors from warnings. Describe `always`/`never` conflicts as possible conflicts requiring human review, not proof of agent behavior.
+
+Instructree is static analysis. It does not upload repository content, call a model, or establish the exact precedence rules of every agent client. Treat `explain` as a map of what may apply.
+
+Do not edit instruction files unless the user asked for changes. After an authorized fix, rerun the same command and report the before-and-after diagnostics.
