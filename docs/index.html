@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Instructree — map the instructions your coding agent will use</title>
+    <meta name="description" content="Trace Codex AGENTS.md precedence, audit coding-agent instruction files, and catch broken scopes, links, imports, and metadata locally with zero runtime dependencies.">
+    <link rel="canonical" href="https://kotobuki09.github.io/instructree/">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Instructree — see the instruction tree before your coding agent does">
+    <meta property="og:description" content="Trace Codex precedence and audit AGENTS.md, CLAUDE.md, Copilot instructions, Agent Skills, and imports locally.">
+    <meta property="og:url" content="https://kotobuki09.github.io/instructree/">
+    <meta property="og:image" content="https://raw.githubusercontent.com/kotobuki09/instructree/main/assets/social-preview.png">
+    <meta property="og:image:width" content="1280">
+    <meta property="og:image:height" content="640">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Instructree — see the instruction tree before your coding agent does">
+    <meta name="twitter:description" content="Trace Codex precedence and audit coding-agent instruction files locally.">
+    <meta name="twitter:image" content="https://raw.githubusercontent.com/kotobuki09/instructree/main/assets/social-preview.png">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="stylesheet" href="site.css">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Instructree",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Windows, macOS, Linux",
+        "description": "A zero-dependency CLI and GitHub Action for mapping and linting coding-agent instruction files.",
+        "url": "https://kotobuki09.github.io/instructree/",
+        "downloadUrl": "https://github.com/kotobuki09/instructree/releases/tag/v0.10.0",
+        "softwareVersion": "0.10.0",
+        "license": "https://opensource.org/license/mit",
+        "codeRepository": "https://github.com/kotobuki09/instructree"
+      }
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Instructree home">
+        <span class="brand-mark" aria-hidden="true">⌁</span>
+        <span>Instructree</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#how-it-works">How it works</a>
+        <a href="#proof">Proof</a>
+        <a class="nav-cta" href="https://github.com/kotobuki09/instructree">View on GitHub</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span></span> Open source · zero runtime dependencies</p>
+          <h1 id="hero-title">See the instruction tree <em>before your coding agent does.</em></h1>
+          <p class="hero-lede">Trace the repository instructions Codex selects for a target file. Audit <code>AGENTS.md</code>, Claude, Copilot, Agent Skills, and nested imports without uploading your code.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/kotobuki09/instructree">Explore the repository <span aria-hidden="true">→</span></a>
+            <a class="button secondary" href="https://github.com/kotobuki09/instructree/releases/tag/v0.10.0">Release v0.10.0</a>
+          </div>
+          <p class="install-label">Install the native Codex skill</p>
+          <div class="copy-line" aria-label="Codex skill installation command">
+            <code>gh skill install kotobuki09/instructree instructree@v0.10.0 --agent codex --scope user</code>
+          </div>
+        </div>
+
+        <div class="terminal" aria-label="Example Instructree Codex explanation">
+          <div class="terminal-bar">
+            <span class="dot red"></span><span class="dot amber"></span><span class="dot green"></span>
+            <span class="terminal-title">~/acme-app</span>
+          </div>
+          <div class="terminal-body">
+            <p><span class="prompt">$</span> instructree explain src/api/client.ts <span class="accent">--client codex</span></p>
+            <div class="terminal-gap"></div>
+            <p class="bright">Codex project chain</p>
+            <p class="muted">applies, broad → specific</p>
+            <ol>
+              <li><span>AGENTS.override.md</span><small>repository-wide</small></li>
+              <li><span>src/AGENTS.md</span><small>directory scope: src/</small></li>
+              <li><span>src/api/AGENTS.override.md</span><small>directory scope: src/api/</small></li>
+            </ol>
+            <p class="terminal-note"><span>repository-only</span> · deterministic · no uploads</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="proof-strip" id="proof" aria-label="Verification evidence">
+        <div><strong>39</strong><span>passing tests</span></div>
+        <div><strong>9</strong><span>CI environments</span></div>
+        <div><strong>682</strong><span>public files audited</span></div>
+        <div><strong>0</strong><span>runtime dependencies</span></div>
+      </section>
+
+      <section class="section" id="how-it-works">
+        <div class="section-heading">
+          <p class="eyebrow"><span></span> One map, explicit client boundaries</p>
+          <h2>Agent instructions became a graph. Instructree makes it inspectable.</h2>
+          <p>Different coding agents discover different files with different scopes. Instructree reports those boundaries instead of pretending there is one universal precedence model.</p>
+        </div>
+        <div class="feature-grid">
+          <article>
+            <p class="feature-number">01</p>
+            <h3>Trace Codex precedence</h3>
+            <p>Select the first non-empty <code>AGENTS.override.md</code> or <code>AGENTS.md</code> in each directory from the repository root to your target.</p>
+          </article>
+          <article>
+            <p class="feature-number">02</p>
+            <h3>Audit the whole surface</h3>
+            <p>Find broken metadata, links, path scopes, duplicate skill names, unsafe imports, and conservative instruction conflicts.</p>
+          </article>
+          <article>
+            <p class="feature-number">03</p>
+            <h3>Enforce it in CI</h3>
+            <p>Run as a zero-install GitHub Action or publish stable SARIF diagnostics to GitHub code scanning.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="formats section" aria-labelledby="formats-title">
+        <div>
+          <p class="eyebrow"><span></span> Supported surfaces</p>
+          <h2 id="formats-title">Built for mixed-agent repositories.</h2>
+        </div>
+        <div class="format-list">
+          <span>AGENTS.md</span>
+          <span>AGENTS.override.md</span>
+          <span>CLAUDE.md</span>
+          <span>Copilot instructions</span>
+          <span>Agent Skills</span>
+          <span>Custom agents</span>
+          <span>Cursor rules</span>
+          <span>Windsurf rules</span>
+        </div>
+      </section>
+
+      <section class="evidence section" aria-labelledby="evidence-title">
+        <div class="evidence-card">
+          <p class="eyebrow"><span></span> Evidence over claims</p>
+          <h2 id="evidence-title">Small enough to audit. Tested across the surfaces it claims to support.</h2>
+          <p>Instructree uses Node.js built-ins, runs on Node 20, 22, and 24 across Windows, Ubuntu, and macOS, and has a pinned compatibility audit against three public instruction and skill catalogs.</p>
+          <div class="evidence-links">
+            <a href="https://github.com/kotobuki09/instructree/actions/workflows/ci.yml">CI matrix <span aria-hidden="true">↗</span></a>
+            <a href="https://github.com/kotobuki09/instructree/blob/main/docs/compatibility.md">Compatibility report <span aria-hidden="true">↗</span></a>
+            <a href="https://github.com/kotobuki09/instructree/security/code-scanning">Code scanning <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="final-cta">
+        <p class="eyebrow"><span></span> Inspect before you edit</p>
+        <h2>Give your next coding-agent session a clean instruction map.</h2>
+        <p>Try Instructree without an API key, account, or repository upload.</p>
+        <div class="hero-actions centered">
+          <a class="button primary" href="https://github.com/kotobuki09/instructree">Get Instructree <span aria-hidden="true">→</span></a>
+          <a class="button secondary" href="https://github.com/kotobuki09/instructree/blob/main/docs/codex-setup.md">Codex setup</a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Instructree · MIT licensed</span>
+      <span>Local static analysis. No model calls. No telemetry.</span>
+    </footer>
+  </body>
+</html>

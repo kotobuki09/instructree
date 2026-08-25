@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kotobuki09.github.io/instructree/sitemap.xml
