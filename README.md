@@ -24,19 +24,19 @@ It also debugs a subtle Codex failure mode: a nested `.git` or configured projec
 No install or API key:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.17.0
+npx --yes github:kotobuki09/instructree#v0.18.0
 ```
 
 Add the same audit to every pull request without copying workflow YAML:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.17.0 init
+npx --yes github:kotobuki09/instructree#v0.18.0 init
 ```
 
 Send findings to GitHub code scanning with one command:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.17.0 init --code-scanning
+npx --yes github:kotobuki09/instructree#v0.18.0 init --code-scanning
 ```
 
 Diagnose Codex instructions, supported user config, and skill state in one share-safe report:
@@ -58,7 +58,7 @@ If Codex appears to ignore a parent file, follow the source-grounded [Codex AGEN
 Trace the Codex project instructions for one file:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.17.0 explain src/api/client.ts --client codex
+npx --yes github:kotobuki09/instructree#v0.18.0 explain src/api/client.ts --client codex
 ```
 
 Audit Codex user and repository-local skill candidate scopes plus supported user config state (the report is read-only and redacts absolute paths):
@@ -72,14 +72,14 @@ The default report keeps scope counts and every actionable finding concise. It r
 Install from GitHub if you want the command everywhere:
 
 ```bash
-npm install --global github:kotobuki09/instructree#v0.17.0
+npm install --global github:kotobuki09/instructree#v0.18.0
 instructree
 ```
 
 Install the native skill for Codex with GitHub CLI 2.90 or later:
 
 ```bash
-gh skill install kotobuki09/instructree instructree@v0.17.0 --agent codex --scope user
+gh skill install kotobuki09/instructree instructree@v0.18.0 --agent codex --scope user
 ```
 
 Or use the cross-agent `skills` installer: `npx skills add kotobuki09/instructree --skill instructree -g --agent codex`.
@@ -225,7 +225,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: kotobuki09/instructree@v0.17.0
+      - uses: kotobuki09/instructree@v0.18.0
         with:
           strict: true
 ```

@@ -4,6 +4,8 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+## 0.18.0 — 2026-08-26
+
 - Add `instructree starter [cwd]` for a read-only readiness audit of a focused, source-grounded Codex engineering stack, with install commands only for missing companions.
 
 ## 0.17.0 — 2026-08-26
