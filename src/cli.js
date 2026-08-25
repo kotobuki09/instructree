@@ -15,7 +15,7 @@ function usage() {
 Usage:
   instructree [scan] [root] [--json | --sarif] [--strict]
   instructree imports [root] [--json] [--strict]
-  instructree skills <cwd> [--home <home>] --client codex [--json]
+  instructree skills <cwd> [--home <home>] [--client codex] [--json]
   instructree explain <file> [--root <root>] [--client codex [--fallback <name>]... [--max-bytes <n>] | --effective] [--json]
   instructree init [root] [--code-scanning]
   instructree --help | --version

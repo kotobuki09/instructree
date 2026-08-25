@@ -146,7 +146,7 @@ export function formatImports(result) {
 
 export function formatSkills(result) {
   const lines = [
-    `${bold("instructree skills")} ${dim("· Codex installed-skills audit")}`,
+    `${bold("instructree skills")} ${dim("· Codex local skill-scope audit")}`,
     `${dim("repository cwd:")} ${result.repository.currentDirectory}`,
     "",
   ];
@@ -164,8 +164,8 @@ export function formatSkills(result) {
   lines.push(
     "",
     cyan("signals"),
-    `duplicate names: ${result.signals.duplicateCount} · metadata failures: ${result.signals.metadataFailureCount}`,
-    `skill-list pressure: ${result.pressure.status} · ${result.pressure.estimatedListingChars}/${result.pressure.budgetChars} chars`,
+    `duplicate names: ${result.signals.duplicateCount} · metadata failures: ${result.signals.metadataFailureCount} · metadata warnings: ${result.signals.metadataWarningCount} · scan errors: ${result.signals.scanErrorCount}`,
+    `skill-list estimate: ${result.pressure.status} · ${result.pressure.estimatedInitialListChars}/${result.pressure.unknownContextWindowReferenceChars} chars`,
   );
   if (result.duplicates.length > 0) {
     lines.push("", yellow("possible duplicate skill names"));
@@ -175,6 +175,14 @@ export function formatSkills(result) {
     lines.push("", yellow("metadata failures"));
     result.metadataFailures.forEach((failure) => lines.push(`- ${failure.path}:${failure.line} · ${failure.message}`));
   }
-  lines.push("", dim(`Read-only audit; source: ${result.provenance.source}`));
+  if (result.metadataWarnings.length > 0) {
+    lines.push("", yellow("metadata warnings"));
+    result.metadataWarnings.forEach((warning) => lines.push(`- ${warning.path}:${warning.line} · ${warning.message}`));
+  }
+  if (result.scanErrors.length > 0) {
+    lines.push("", red("scan errors"));
+    result.scanErrors.forEach((error) => lines.push(`- ${error.path} · ${error.message}`));
+  }
+  lines.push("", dim(`Read-only candidate-scope audit; source: ${result.provenance.source}`));
   return lines.join("\n");
 }

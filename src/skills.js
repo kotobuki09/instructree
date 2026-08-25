@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { parseFrontmatter } from "./frontmatter.js";
 
-const SKILL_LIST_BUDGET_CHARS = 8000;
+const CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS = 8000;
 const IGNORED_DIRECTORIES = new Set([".git", ".hg", ".svn", "node_modules", "vendor"]);
 const CODEX_SKILLS_SOURCE = "https://developers.openai.com/codex/skills";
 
@@ -128,85 +128,83 @@ async function discoverScope(scope) {
   }
   if (!exists || !isDirectory) return { exists, isDirectory, skills, errors };
 
-  const visitedDirectories = new Set();
+  let entries;
+  try {
+    entries = await fs.readdir(scope.absoluteRoot, { withFileTypes: true });
+  } catch (error) {
+    errors.push({
+      path: scope.kind === "user" ? "~/.agents/skills" : scopePath(scope),
+      message: `could not read skill directory: ${error.code ?? "error"}`,
+    });
+    return { exists, isDirectory, skills, errors };
+  }
+  entries.sort((left, right) => left.name.localeCompare(right.name));
 
-  async function walk(directory, relativeDirectory = "") {
-    let realDirectory;
+  for (const entry of entries) {
+    if (IGNORED_DIRECTORIES.has(entry.name)) continue;
+    const skillDirectory = path.join(scope.absoluteRoot, entry.name);
+    let directoryStat;
     try {
-      realDirectory = await fs.realpath(directory);
+      directoryStat = await fs.stat(skillDirectory);
     } catch (error) {
+      if (error.code === "ENOENT") continue;
       errors.push({
-        path: scope.kind === "user" ? "~/.agents/skills" : scopePath(scope),
-        message: `could not resolve skill directory: ${error.code ?? "error"}`,
+        path: displaySkillPath(scope, entry.name),
+        message: `could not inspect skill folder: ${error.code ?? "error"}`,
       });
-      return;
+      continue;
     }
-    if (visitedDirectories.has(realDirectory)) return;
-    visitedDirectories.add(realDirectory);
+    if (!directoryStat.isDirectory()) continue;
 
-    let entries;
+    const relativePath = `${normalize(entry.name)}/SKILL.md`;
+    const skillFile = path.join(skillDirectory, "SKILL.md");
+    let skillStat;
     try {
-      entries = await fs.readdir(directory, { withFileTypes: true });
-    } catch (error) {
-      errors.push({
-        path: scope.kind === "user" ? "~/.agents/skills" : scopePath(scope),
-        message: `could not read skill directory: ${error.code ?? "error"}`,
-      });
-      return;
-    }
-    entries.sort((left, right) => left.name.localeCompare(right.name));
-
-    const skillFile = path.join(directory, "SKILL.md");
-    try {
-      const stat = await fs.stat(skillFile);
-      if (stat.isFile() && relativeDirectory) {
-        const relativePath = `${normalize(relativeDirectory)}/SKILL.md`;
-        const content = await fs.readFile(skillFile, "utf8");
-        skills.push({
-          ...metadataReport(scope, relativePath, content),
-          scope: scope.kind,
-          scopeDirectory: scopeDirectory(scope),
-          scopePath: scopePath(scope),
-          order: scope.order,
-        });
-        return;
-      }
+      skillStat = await fs.stat(skillFile);
     } catch (error) {
       if (error.code !== "ENOENT") {
         errors.push({
-          path: displaySkillPath(scope, `${normalize(relativeDirectory)}/SKILL.md`),
-          message: `could not read skill metadata: ${error.code ?? "error"}`,
+          path: displaySkillPath(scope, relativePath),
+          message: `could not inspect skill metadata: ${error.code ?? "error"}`,
         });
       }
+      continue;
     }
+    if (!skillStat.isFile()) continue;
 
-    for (const entry of entries) {
-      if (IGNORED_DIRECTORIES.has(entry.name)) continue;
-      const child = path.join(directory, entry.name);
-      let stat;
-      try {
-        stat = await fs.stat(child);
-      } catch (error) {
-        if (error.code === "ENOENT") continue;
-        errors.push({
-          path: displaySkillPath(scope, relativeDirectory ? `${normalize(relativeDirectory)}/${entry.name}` : entry.name),
-          message: `could not inspect skill entry: ${error.code ?? "error"}`,
-        });
-        continue;
-      }
-      if (!stat.isDirectory()) continue;
-      const childRelative = relativeDirectory ? path.join(relativeDirectory, entry.name) : entry.name;
-      await walk(child, childRelative);
+    try {
+      const content = await fs.readFile(skillFile, "utf8");
+      skills.push({
+        ...metadataReport(scope, relativePath, content),
+        scope: scope.kind,
+        scopeDirectory: scopeDirectory(scope),
+        scopePath: scopePath(scope),
+        order: scope.order,
+      });
+    } catch (error) {
+      errors.push({
+        path: displaySkillPath(scope, relativePath),
+        message: `could not read skill metadata: ${error.code ?? "error"}`,
+      });
     }
   }
 
-  await walk(scope.absoluteRoot);
   skills.sort((left, right) => left.path.localeCompare(right.path));
   return { exists, isDirectory, skills, errors };
 }
 
-function listingChars(skill) {
-  return Array.from(`${skill.name ?? "(unnamed)"}: ${skill.description ?? ""}`).length + 1;
+function listingEstimate(skill) {
+  const nameChars = Array.from(skill.name ?? "(unnamed)").length;
+  const descriptionChars = Array.from(skill.description ?? "").length;
+  const pathChars = Array.from(skill.path).length;
+  const separatorChars = 3;
+  return {
+    nameChars,
+    descriptionChars,
+    pathChars,
+    separatorChars,
+    totalChars: nameChars + descriptionChars + pathChars + separatorChars,
+  };
 }
 
 function duplicateReports(skills) {
@@ -282,7 +280,7 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
       scope: scope.kind,
       directory: scopeDirectory(scope),
       path: scopePath(scope),
-      active: true,
+      candidate: true,
       exists: result.exists,
       isDirectory: result.isDirectory,
       skillCount: publicSkills.length,
@@ -310,19 +308,28 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
     })))
     .sort((left, right) => left.path.localeCompare(right.path) || left.code.localeCompare(right.code));
   const duplicates = duplicateReports(allSkills);
-  const estimatedListingChars = allSkills.reduce((total, skill) => total + listingChars(skill), 0);
+  const estimates = allSkills.map(listingEstimate);
   const pressure = {
-    estimatedListingChars,
-    estimatedDescriptionChars: allSkills.reduce((total, skill) => total + Array.from(skill.description ?? "").length, 0),
-    budgetChars: SKILL_LIST_BUDGET_CHARS,
-    remainingChars: Math.max(0, SKILL_LIST_BUDGET_CHARS - estimatedListingChars),
-    status: estimatedListingChars > SKILL_LIST_BUDGET_CHARS ? "may-truncate" : "within-8k-ceiling",
-    note: "Estimate only: Codex may use a lower context-derived limit and may shorten or omit descriptions.",
+    estimatedInitialListChars: estimates.reduce((total, estimate) => total + estimate.totalChars, 0),
+    estimatedNameChars: estimates.reduce((total, estimate) => total + estimate.nameChars, 0),
+    estimatedDescriptionChars: estimates.reduce((total, estimate) => total + estimate.descriptionChars, 0),
+    estimatedPathChars: estimates.reduce((total, estimate) => total + estimate.pathChars, 0),
+    separatorChars: estimates.reduce((total, estimate) => total + estimate.separatorChars, 0),
+    unknownContextWindowReferenceChars: CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS,
+    remainingAgainstUnknownContextWindowReferenceChars: Math.max(
+      0,
+      CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS - estimates.reduce((total, estimate) => total + estimate.totalChars, 0),
+    ),
+    status:
+      estimates.reduce((total, estimate) => total + estimate.totalChars, 0) > CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS
+        ? "exceeds-unknown-window-reference"
+        : "within-unknown-window-reference",
+    note: "Approximate only: Codex uses at most 2% of the model context, or 8,000 characters when the context window is unknown; logical redacted paths may differ from runtime paths.",
   };
 
   return {
     client: "codex",
-    profile: "codex-skills",
+    profile: "codex-local-skill-scopes",
     repository: {
       root: "<repository>",
       currentDirectory: normalize(path.relative(repositoryRoot, absoluteCwd)) || ".",
@@ -345,6 +352,11 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
     provenance: {
       source: CODEX_SKILLS_SOURCE,
       scopeModel: "user ~/.agents/skills plus .agents/skills from the current directory to the repository root",
+      limitations: [
+        "Does not include Codex admin or system skills.",
+        "Does not read ~/.codex/config.toml, so local skill enable or disable state is unknown.",
+        "Reports candidate discovery paths, not the exact skills loaded for a run.",
+      ],
     },
   };
 }

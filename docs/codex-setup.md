@@ -29,10 +29,10 @@ Instructree recognizes Codex-specific `AGENTS.override.md` files described in th
 Before adding or troubleshooting skills, inspect the scopes Codex can see from a checkout:
 
 ```bash
-instructree skills . --home "$HOME" --client codex --json
+instructree skills . --client codex --json
 ```
 
-The report includes the user `~/.agents/skills` catalog and every active repository `.agents/skills` scope from the current directory to the repository root. It follows symlinked skill folders, keeps paths logical instead of exposing absolute home directories, and highlights possible duplicate names, missing or malformed `name`/`description` metadata, and a conservative estimate of skill-list pressure. The estimate uses the documented 8,000-character upper ceiling; it cannot predict model behavior or the exact context-derived limit. This command is read-only and never installs skills or uploads content. Semantics are grounded in the official [Codex skills documentation](https://developers.openai.com/codex/skills).
+The report includes the user `~/.agents/skills` catalog and every repository-local `.agents/skills` candidate scope from the current directory to the repository root. It follows symlinked skill folders, keeps paths logical instead of exposing absolute home directories, and highlights possible duplicate names, missing or malformed `name`/`description` metadata, and an approximate initial-list character estimate that includes each skill's name, description, and logical path. The estimate is compared with the documented 8,000-character reference used when the context window is unknown; Codex otherwise uses at most 2% of the model context, which can differ. `--home <home>` is an optional testing or inspection override. This command is read-only, excludes admin/system skills, does not read `~/.codex/config.toml`, and therefore cannot report config-enabled state or the exact skills loaded for a run. Semantics are grounded in the official [Codex skills documentation](https://developers.openai.com/codex/skills).
 
 ## Focused companion stack
 

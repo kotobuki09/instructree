@@ -43,10 +43,10 @@ Trace the Codex project instructions for one file:
 npx --yes github:kotobuki09/instructree#v0.11.0 explain src/api/client.ts --client codex
 ```
 
-Audit the Codex skills visible from a checkout and your user scope (the report is read-only and redacts absolute paths):
+Audit Codex user and repository-local skill candidate scopes (the report is read-only and redacts absolute paths):
 
 ```bash
-instructree skills . --home "$HOME" --client codex --json
+instructree skills . --client codex --json
 ```
 
 Install from GitHub if you want the command everywhere:
@@ -124,7 +124,7 @@ The formats are grounded in the current [OpenAI Codex AGENTS.md guide](https://l
 ```text
 instructree [scan] [root] [--json | --sarif] [--strict]
 instructree imports [root] [--json] [--strict]
-instructree skills <cwd> [--home <home>] --client codex [--json]
+instructree skills <cwd> [--home <home>] [--client codex] [--json]
 instructree explain <file> [--root <root>] [--client codex [--fallback <name>]... [--max-bytes <n>] | --effective] [--json]
 instructree init [root] [--code-scanning]
 instructree --help | --version
@@ -151,8 +151,8 @@ instructree explain packages/api/src/routes.ts --effective
 # Select the Codex project instruction chain for a target
 instructree explain packages/api/src/routes.ts --client codex --json
 
-# Audit user and active repository Codex skill scopes without installing anything
-instructree skills . --home "$HOME" --client codex --json
+# Audit user and repository-local Codex skill candidate scopes without installing anything
+instructree skills . --client codex --json
 
 # Mirror project_doc_fallback_filenames and project_doc_max_bytes from Codex config
 instructree explain packages/api/src/routes.ts --client codex \
@@ -176,7 +176,7 @@ Exit codes are `0` for a passing policy, `1` for diagnostics that fail the selec
 
 Candidate existence, empty-file behavior, and byte truncation are also checked against the pinned [Codex implementation](https://github.com/openai/codex/blob/9be8d6e1c3dbb145d2d7ac3ba46729340e6d8d40/codex-rs/core/src/agents_md.rs), because those details are more precise than the user guide.
 
-`skills <cwd> --client codex` audits the user `~/.agents/skills` scope and each `.agents/skills` directory from the current directory to the repository root, following symlinked skill folders while keeping output paths logical and repository-relative. It reports possible duplicate names across scopes, malformed `SKILL.md` metadata, and an estimate against Codex's documented initial skill-list ceiling of 8,000 characters. The estimate is a planning signal, not a claim about which skills a model will use; Instructree does not install skills, read global Codex configuration, upload files, or write to either scope. See the official [Codex skills documentation](https://developers.openai.com/codex/skills) for the discovery and list-budget semantics.
+`skills <cwd> [--client codex]` inventories the user `~/.agents/skills` scope and each `.agents/skills` directory from the current directory to the repository root, following symlinked skill folders while keeping output paths logical and repository-relative. It reports possible duplicate names across candidate scopes, malformed `SKILL.md` metadata, and an approximate initial-list character estimate that includes name, description, and logical path. The estimate is compared only with the documented 8,000-character reference used when the context window is unknown; Codex otherwise uses at most 2% of the model context, which can differ. `--home <home>` is an optional override for testing or inspecting another user scope. This read-only inventory excludes Codex admin/system skills and does not read `~/.codex/config.toml`, so it cannot report config-enabled state or the exact skills loaded for a run. Instructree does not install skills, upload files, or write to either scope. See the official [Codex skills documentation](https://developers.openai.com/codex/skills) for the discovery and list-budget semantics.
 
 ## CI
 
