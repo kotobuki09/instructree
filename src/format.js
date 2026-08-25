@@ -163,8 +163,32 @@ export function formatSkills(result, { showAll = false } = {}) {
     else scope.skills.forEach((skill, index) => {
       const connector = index === scope.skills.length - 1 ? "└─" : "├─";
       const status = skill.metadata.valid ? "valid" : `${skill.metadata.failures.length} metadata issue${skill.metadata.failures.length === 1 ? "" : "s"}`;
-      lines.push(`${connector} ${skill.path} ${dim(`[${skill.name ?? "unnamed"} · ${status}]`)}`);
+      const configured = skill.configuredEnabled === false ? " · disabled by user config" : "";
+      lines.push(`${connector} ${skill.path} ${dim(`[${skill.name ?? "unnamed"} · ${status}${configured}]`)}`);
     });
+  }
+  const configuration = result.configuration;
+  lines.push("", cyan(`user config · ${configuration.path}`));
+  if (configuration.status === "missing") lines.push(dim("└─ not present · all discovered candidates remain enabled by default"));
+  else if (configuration.status === "unavailable") lines.push(dim("└─ home unavailable · user configuration was not inspected"));
+  else if (configuration.status === "unreadable") lines.push(red("└─ unreadable · no user rules applied"));
+  else if (configuration.status === "unsupported") lines.push(red("└─ unsupported relevant syntax · no user rules applied"));
+  else {
+    const catalog = configuration.settings.includeInstructions === false
+      ? "disabled"
+      : configuration.settings.includeInstructions === true
+        ? "enabled"
+        : "default";
+    const bundled = configuration.settings.bundledEnabled === false
+      ? "disabled"
+      : configuration.settings.bundledEnabled === true
+        ? "enabled"
+        : "default";
+    const maxContext = configuration.settings.maxContextTokens === null
+      ? "default"
+      : `${configuration.settings.maxContextTokens} tokens`;
+    lines.push(dim(`catalog instructions: ${catalog} · bundled skills: ${bundled} · max context: ${maxContext}`));
+    lines.push(dim(`rules: ${configuration.effectiveRuleCount} effective · ${configuration.matchedRuleCount} matched · ${configuration.disabledSkills.length} disabled · ${configuration.unmatchedRuleCount} unmatched`));
   }
   lines.push(
     "",
@@ -187,6 +211,18 @@ export function formatSkills(result, { showAll = false } = {}) {
   if (result.scanErrors.length > 0) {
     lines.push("", red("scan errors"));
     result.scanErrors.forEach((error) => lines.push(`- ${error.path}:${error.line} · ${error.message}`));
+  }
+  if (configuration.disabledSkills.length > 0) {
+    lines.push("", yellow("disabled by user config"));
+    configuration.disabledSkills.forEach((skill) => lines.push(`- ${skill.path} · ${skill.name ?? "unnamed"}`));
+  }
+  if (configuration.unmatchedRules.length > 0) {
+    lines.push("", yellow("unmatched user config rules"));
+    configuration.unmatchedRules.forEach((rule) => lines.push(`- ${configuration.path}:${rule.line} · ${rule.selector} ${rule.value} · ${rule.enabled ? "enabled" : "disabled"}`));
+  }
+  if (configuration.issues.length > 0) {
+    lines.push("", red("user config issues"));
+    configuration.issues.forEach((issue) => lines.push(`- ${issue.path}:${issue.line} · ${issue.message}`));
   }
   lines.push("", dim("limitations"));
   result.provenance.limitations.forEach((limitation) => lines.push(dim(`- ${limitation}`)));

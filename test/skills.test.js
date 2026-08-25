@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { parseCodexSkillsConfig } from "../src/codex-config.js";
 import { auditCodexSkills } from "../src/index.js";
 import { run } from "../src/cli.js";
 
@@ -56,10 +57,43 @@ test("audits Codex user and repository skill scopes without exposing absolute pa
   assert.equal(result.pressure.estimatedDescriptionChars, estimatedDescriptions);
   assert.equal(result.pressure.estimatedPathChars, estimatedPaths);
   assert.equal(result.pressure.estimatedInitialListChars, estimatedNames + estimatedDescriptions + estimatedPaths + result.skills.length * 3);
+  assert.equal(result.configuration.status, "missing");
+  assert.equal(result.skills.every((skill) => skill.configuredEnabled), true);
+  assert.equal(result.pressure.configuredEstimatedInitialListChars, result.pressure.estimatedInitialListChars);
   assert.match(result.pressure.note, /2%/);
   const serialized = JSON.stringify(result);
   assert.equal(serialized.includes(home), false);
   assert.equal(serialized.includes(repository), false);
+});
+
+test("parses the supported Codex skill-config subset and trims name selectors", () => {
+  const parsed = parseCodexSkillsConfig(`[skills] # inline comment
+include_instructions = false
+
+[[skills.config]]
+name = "  alpha  "
+enabled = false
+`);
+
+  assert.equal(parsed.status, "parsed");
+  assert.equal(parsed.settings.includeInstructions, false);
+  assert.deepEqual(parsed.rules, [{ selector: "name", value: "alpha", enabled: false, line: 5 }]);
+  assert.deepEqual(parsed.issues, []);
+});
+
+test("marks unsupported skill config forms instead of partially interpreting them", () => {
+  const cases = [
+    "\uFEFF[skills]\ninclude_instructions = false\n",
+    "skills = { include_instructions = false }\n",
+    "[skills]\ninclude_instructions = true\ninclude_instructions = false\n",
+    "[[skills.config]]\nname = 'alpha'\n",
+    "[[skills.config]]\npath = 'relative/SKILL.md'\nenabled = false\n",
+    "[[skills.config]]\nname = [\"alpha\"]\nenabled = false\n",
+  ];
+
+  for (const content of cases) {
+    assert.equal(parseCodexSkillsConfig(content).status, "unsupported");
+  }
 });
 
 test("labels an overlong approximate initial list against the unknown-window reference", async (context) => {
@@ -92,6 +126,107 @@ test("reports one precise metadata failure for a BOM-prefixed Codex skill", asyn
   assert.deepEqual(result.metadataFailures.map((item) => item.code), ["unsupported-utf8-bom"]);
   assert.match(result.metadataFailures[0].message, /UTF-8 BOM/);
   assert.match(result.metadataFailures[0].message, /without BOM/);
+});
+
+test("resolves user Codex skill rules with later-rule precedence and redacted paths", async (context) => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "instructree-skills-config-"));
+  const repository = path.join(temporary, "repo");
+  const home = path.join(temporary, "home");
+  const localOnly = path.join(repository, ".agents", "skills", "local-only", "SKILL.md");
+  await writeFiles(repository, {
+    ".git/HEAD": "ref: refs/heads/main\n",
+    ".agents/skills/local-shared/SKILL.md": "---\nname: shared\ndescription: Local shared skill.\n---\n",
+    ".agents/skills/local-only/SKILL.md": "---\nname: local-only\ndescription: Disable by exact path.\n---\n",
+  });
+  await writeFiles(home, {
+    ".agents/skills/global-shared/SKILL.md": "---\nname: shared\ndescription: Global shared skill.\n---\n",
+    ".codex/config.toml": `[skills]
+include_instructions = true
+max_context_tokens = 2048
+
+[skills.bundled]
+enabled = false
+
+[[skills.config]]
+name = "shared"
+enabled = false
+
+[[skills.config]]
+name = "ghost"
+enabled = false
+
+[[skills.config]]
+name = "shared"
+enabled = true
+
+[[skills.config]]
+path = ${JSON.stringify(localOnly)}
+enabled = false
+
+[[skills.config]]
+name = "ignored"
+path = ${JSON.stringify(localOnly)}
+enabled = false
+
+[[skills.config]]
+name = "   "
+enabled = false
+`,
+  });
+  context.after(() => fs.rm(temporary, { recursive: true, force: true }));
+
+  const result = await auditCodexSkills(repository, home);
+  const byName = Object.fromEntries(result.skills.map((skill) => [skill.name, skill]));
+  assert.equal(result.configuration.status, "parsed");
+  assert.deepEqual(result.configuration.settings, {
+    includeInstructions: true,
+    maxContextTokens: 2048,
+    bundledEnabled: false,
+  });
+  assert.equal(result.configuration.effectiveRuleCount, 3);
+  assert.equal(result.configuration.matchedRuleCount, 2);
+  assert.equal(result.configuration.unmatchedRuleCount, 1);
+  assert.deepEqual(result.configuration.unmatchedRules.map((rule) => rule.value), ["ghost"]);
+  assert.deepEqual(result.configuration.issues.map((issue) => issue.code), ["invalid-selector", "blank-selector"]);
+  assert.equal(byName.shared.configuredEnabled, true);
+  assert.equal(byName["local-only"].configuredEnabled, false);
+  assert.deepEqual(result.configuration.disabledSkills.map((skill) => skill.name), ["local-only"]);
+  assert.ok(result.pressure.configuredEstimatedInitialListChars < result.pressure.estimatedInitialListChars);
+  const serialized = JSON.stringify(result);
+  assert.equal(serialized.includes(temporary), false);
+  assert.equal(serialized.includes(localOnly), false);
+
+  const output = [];
+  await run(["skills", repository, "--home", home], { log: (value) => output.push(value) });
+  process.exitCode = 0;
+  assert.match(output[0], /user config · ~\/\.codex\/config\.toml/);
+  assert.match(output[0], /3 effective · 2 matched · 1 disabled · 1 unmatched/);
+  assert.match(output[0], /local-only/);
+  assert.doesNotMatch(output[0], new RegExp(temporary.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+});
+
+test("fails closed on unsupported user skill config and does not apply project rules", async (context) => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "instructree-skills-config-unsupported-"));
+  const repository = path.join(temporary, "repo");
+  const home = path.join(temporary, "home");
+  await writeFiles(repository, {
+    ".git/HEAD": "ref: refs/heads/main\n",
+    ".agents/skills/project-skill/SKILL.md": "---\nname: project-skill\ndescription: Project skill.\n---\n",
+    ".codex/config.toml": "[[skills.config]]\nname = 'project-skill'\nenabled = false\n",
+  });
+  await writeFiles(home, {
+    ".codex/config.toml": "[skills]\ninclude_instructions = false\n\n[[skills.config]]\nname = [\"project-skill\"]\nenabled = false\n",
+  });
+  context.after(() => fs.rm(temporary, { recursive: true, force: true }));
+
+  const result = await auditCodexSkills(repository, home);
+  assert.equal(result.configuration.status, "unsupported");
+  assert.equal(result.configuration.settings.includeInstructions, null);
+  assert.ok(result.configuration.issues.some((issue) => issue.code === "unsupported-value"));
+  assert.equal(result.skills[0].configuredEnabled, true);
+  assert.equal(result.configuration.disabledSkills.length, 0);
+  assert.equal(result.pressure.configuredEstimatedInitialListChars, result.pressure.estimatedInitialListChars);
+  assert.equal(JSON.stringify(result).includes(temporary), false);
 });
 
 test("skills CLI emits deterministic JSON and exposes the audit in help", async (context) => {
@@ -150,9 +285,9 @@ test("skills CLI emits deterministic JSON and exposes the audit in help", async 
   await assert.rejects(() => run(["skills", cwd, "--all", "--json"]), /--all and --json cannot be used together/);
   assert.deepEqual(JSON.parse(first[0]).provenance.limitations, [
     "Does not include Codex admin or system skills.",
-    "Does not read ~/.codex/config.toml, so local skill enable or disable state is unknown.",
+    "Reads only supported skill settings from user ~/.codex/config.toml; session flags and project config are not applied.",
     "Uses the nearest .git marker rather than configured Codex project-root markers.",
-    "Reports candidate discovery paths, not the exact skills loaded for a run.",
+    "Reports user-configured candidate state, not the exact skills loaded after plugins, product restrictions, or session overrides.",
   ]);
 });
 

@@ -4,6 +4,8 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+- Read supported user `~/.codex/config.toml` skill settings, resolve current Codex name/path rule precedence, and report disabled candidates, unmatched rules, and config issues without exposing absolute paths.
+
 ## 0.14.0 — 2026-08-26
 
 - Detect UTF-8 BOM-prefixed `SKILL.md` frontmatter with a precise Codex compatibility error while still parsing valid metadata behind it.

@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { resolveCodexSkillsConfig } from "./codex-config.js";
 import { CODEX_SKILL_UTF8_BOM_MESSAGE, parseFrontmatter } from "./frontmatter.js";
 
 const CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS = 8000;
@@ -188,6 +189,7 @@ async function discoverScope(scope, seenCanonicalSkillTargets) {
       const content = await fs.readFile(skillFile, "utf8");
       skills.push({
         ...metadataReport(scope, relativePath, content),
+        absolutePath: canonicalSkillFile,
         scope: scope.kind,
         scopeDirectory: scopeDirectory(scope),
         scopePath: scopePath(scope),
@@ -293,7 +295,7 @@ function duplicateReports(skills) {
 }
 
 function withoutOrder(skill) {
-  const { order, ...publicSkill } = skill;
+  const { absolutePath, order, ...publicSkill } = skill;
   return publicSkill;
 }
 
@@ -356,6 +358,17 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
     scanErrors.push(...result.errors);
   }
   allSkills.sort((left, right) => left.order - right.order || left.path.localeCompare(right.path));
+  const { configuration, enabledByPath } = await resolveCodexSkillsConfig(home, allSkills);
+  for (const skill of allSkills) {
+    skill.configuredEnabled = enabledByPath.get(skill.absolutePath) ?? true;
+  }
+  const configuredByPath = new Map(allSkills.map((skill) => [skill.path, skill.configuredEnabled]));
+  for (const scope of scannedScopes) {
+    scope.skills = scope.skills.map((skill) => ({
+      ...skill,
+      configuredEnabled: configuredByPath.get(skill.path) ?? true,
+    }));
+  }
 
   const metadataFailures = allSkills
     .flatMap((skill) => skill.metadata.failures.map((failure) => ({
@@ -375,6 +388,10 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
     .sort((left, right) => left.path.localeCompare(right.path) || left.code.localeCompare(right.code));
   const duplicates = duplicateReports(allSkills);
   const estimates = allSkills.map(listingEstimate);
+  const configuredSkills = configuration.settings.includeInstructions === false
+    ? []
+    : allSkills.filter((skill) => skill.configuredEnabled);
+  const configuredEstimates = configuredSkills.map(listingEstimate);
   const estimateTotals = estimates.reduce(
     (totals, estimate) => {
       totals.initialList += estimate.totalChars;
@@ -386,6 +403,7 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
     },
     { initialList: 0, names: 0, descriptions: 0, paths: 0, separators: 0 },
   );
+  const configuredInitialList = configuredEstimates.reduce((total, estimate) => total + estimate.totalChars, 0);
   const pressure = {
     estimatedInitialListChars: estimateTotals.initialList,
     estimatedNameChars: estimateTotals.names,
@@ -401,7 +419,15 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
       estimateTotals.initialList > CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS
         ? "exceeds-unknown-window-reference"
         : "within-unknown-window-reference",
-    note: "Approximate only: Codex uses at most 2% of the model context, or 8,000 characters when the context window is unknown; logical redacted paths may differ from runtime paths.",
+    configuredCandidateCount: configuredSkills.length,
+    configuredEstimatedInitialListChars: configuredInitialList,
+    configuredStatus:
+      configuration.settings.includeInstructions === false
+        ? "catalog-disabled-by-user-config"
+        : configuredInitialList > CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS
+          ? "exceeds-unknown-window-reference"
+          : "within-unknown-window-reference",
+    note: "Approximate only: Codex uses at most 2% of the model context, or 8,000 characters when the context window is unknown; the configured estimate reflects supported user config only, and logical redacted paths may differ from runtime paths.",
   };
 
   return {
@@ -414,6 +440,7 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
     },
     scopes: scannedScopes,
     skills: allSkills.map(withoutOrder),
+    configuration,
     duplicates,
     metadataFailures,
     metadataWarnings,
@@ -424,6 +451,9 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
       metadataFailureCount: metadataFailures.length,
       metadataWarningCount: metadataWarnings.length,
       scanErrorCount: scanErrors.length,
+      disabledByUserConfigCount: configuration.disabledSkills.length,
+      unmatchedConfigRuleCount: configuration.unmatchedRuleCount,
+      configIssueCount: configuration.issues.length,
     },
     scanErrors,
     provenance: {
@@ -431,9 +461,9 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
       scopeModel: "user ~/.agents/skills plus .agents/skills from the current directory to the repository root",
       limitations: [
         "Does not include Codex admin or system skills.",
-        "Does not read ~/.codex/config.toml, so local skill enable or disable state is unknown.",
+        "Reads only supported skill settings from user ~/.codex/config.toml; session flags and project config are not applied.",
         "Uses the nearest .git marker rather than configured Codex project-root markers.",
-        "Reports candidate discovery paths, not the exact skills loaded for a run.",
+        "Reports user-configured candidate state, not the exact skills loaded after plugins, product restrictions, or session overrides.",
       ],
     },
   };

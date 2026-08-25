@@ -2,7 +2,7 @@
 
 > Instructree is a dependency-free CLI, GitHub Action, and Codex skill that maps and lints repository-scoped coding-agent instructions without uploading repository content.
 
-Use Instructree to inspect the exact configured Codex AGENTS.md and AGENTS.override.md project chain; audit Codex user and repository-local skill candidate scopes; and map CLAUDE.md, GitHub Copilot instructions and recursive imports, Agent Skills, custom agents, agentic workflows, Cursor rules, Windsurf rules, and GEMINI.md. The current release is v0.14.0 and requires Node.js 20 or later.
+Use Instructree to inspect the exact configured Codex AGENTS.md and AGENTS.override.md project chain; audit Codex user and repository-local skill candidate scopes plus supported user skill config; and map CLAUDE.md, GitHub Copilot instructions and recursive imports, Agent Skills, custom agents, agentic workflows, Cursor rules, Windsurf rules, and GEMINI.md. The current release is v0.14.0 and requires Node.js 20 or later.
 
 ## Start here
 
@@ -21,5 +21,5 @@ Use Instructree to inspect the exact configured Codex AGENTS.md and AGENTS.overr
 ## Try it
 
 - [CLI install and examples](https://github.com/kotobuki09/instructree#try-it): Run the pinned release without an API key or repository upload.
-- [Codex local-scope audit](https://github.com/kotobuki09/instructree#commands): Inspect user and repository-local `.agents/skills` candidate scopes, duplicates, metadata, and prompt-list pressure concisely with `instructree skills . --client codex`; add `--all` or `--json` for the full inventory.
+- [Codex local-scope audit](https://github.com/kotobuki09/instructree#commands): Inspect user and repository-local `.agents/skills` candidates, supported user `skills.config` state, duplicates, metadata, and prompt-list pressure concisely with `instructree skills . --client codex`; add `--all` or `--json` for the full inventory.
 - [GitHub Action](https://github.com/kotobuki09/instructree#ci): Add deterministic instruction linting to pull requests.

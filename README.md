@@ -43,13 +43,13 @@ Trace the Codex project instructions for one file:
 npx --yes github:kotobuki09/instructree#v0.14.0 explain src/api/client.ts --client codex
 ```
 
-Audit Codex user and repository-local skill candidate scopes (the report is read-only and redacts absolute paths):
+Audit Codex user and repository-local skill candidate scopes plus supported user config state (the report is read-only and redacts absolute paths):
 
 ```bash
 instructree skills . --client codex
 ```
 
-The default report keeps scope counts and every actionable finding concise. Add `--all` for the complete human-readable inventory or `--json` for the unchanged structured result.
+The default report keeps scope counts and every actionable finding concise. It reads supported skill settings from user `~/.codex/config.toml` to explain disabled candidates, later-rule precedence, unmatched selectors, catalog injection, bundled skills, and the configured context cap. Add `--all` for the complete human-readable inventory or `--json` for the full structured result.
 
 Install from GitHub if you want the command everywhere:
 
@@ -74,6 +74,7 @@ If Instructree catches a stale or conflicting agent instruction before your next
 
 - malformed or incomplete frontmatter in skills, custom agents, and agentic workflows;
 - UTF-8 BOM-prefixed `SKILL.md` frontmatter that [current Codex versions may misreport as missing](docs/research/codex-skill-utf8-bom.md);
+- disabled candidates, unmatched selectors, and unsupported relevant syntax in user `~/.codex/config.toml` skill settings;
 - duplicate skill names across `.agents`, `.claude`, and `.github`;
 - skill names that do not use portable kebab-case or match their folder, with nested namespace prefixes supported;
 - broken relative Markdown links inside agent instruction files;
@@ -154,7 +155,7 @@ instructree explain packages/api/src/routes.ts --effective
 # Select the Codex project instruction chain for a target
 instructree explain packages/api/src/routes.ts --client codex --json
 
-# Audit user and repository-local Codex skill candidate scopes without installing anything
+# Audit Codex skill candidates and supported user config without installing anything
 instructree skills . --client codex --json
 
 # Mirror project_doc_fallback_filenames and project_doc_max_bytes from Codex config
@@ -175,11 +176,11 @@ Exit codes are `0` for a passing policy, `1` for diagnostics that fail the selec
 
 `explain <file> --client codex` follows the documented Codex project precedence from the repository root through the target file's directory. In each directory it selects the first existing regular file from `AGENTS.override.md`, `AGENTS.md`, then the ordered `--fallback` filenames, and reports at most one selection per directory in broad-to-specific order. An existing empty candidate is reported as empty and blocks later candidates in that directory, matching Codex. The combined chain defaults to a 32,768-byte `--max-bytes` budget; per-file `bytes`, `includedBytes`, `empty`, `includedEmpty`, and `truncated` fields plus the top-level `codex` metadata make truncation and exclusion explicit in JSON.
 
-`--fallback` accepts one portable repository-local filename and can be repeated in precedence order. `--max-bytes` accepts a non-negative integer. These options correspond to Codex's `project_doc_fallback_filenames` and `project_doc_max_bytes` settings, but are explicit CLI inputs: Instructree does not read user-level Codex configuration or upload repository content. The JavaScript API uses `explain(target, root, { client: "codex", fallbackFilenames: ["PROJECT.md"], maxBytes: 65536 })`. Use plain `explain` for the neutral cross-client map; Codex configuration flags require `--client codex`, which cannot be combined with `--effective`.
+`--fallback` accepts one portable repository-local filename and can be repeated in precedence order. `--max-bytes` accepts a non-negative integer. These options correspond to Codex's `project_doc_fallback_filenames` and `project_doc_max_bytes` settings, but are explicit CLI inputs: the `explain` command does not read those user-level settings or upload repository content. The JavaScript API uses `explain(target, root, { client: "codex", fallbackFilenames: ["PROJECT.md"], maxBytes: 65536 })`. Use plain `explain` for the neutral cross-client map; Codex configuration flags require `--client codex`, which cannot be combined with `--effective`.
 
 Candidate existence, empty-file behavior, and byte truncation are also checked against the pinned [Codex implementation](https://github.com/openai/codex/blob/9be8d6e1c3dbb145d2d7ac3ba46729340e6d8d40/codex-rs/core/src/agents_md.rs), because those details are more precise than the user guide.
 
-`skills [cwd] [--client codex]` inventories the user `~/.agents/skills` scope and each `.agents/skills` directory from the current directory to the repository root. It recursively scans the depth-bounded local roots, follows symlinked skill folders, deduplicates canonical targets, skips hidden descendants, and keeps output paths logical and repository-relative. It reports possible duplicate names with source lines, malformed `SKILL.md` metadata, scan failures, and an approximate initial-list character estimate that includes name, description, and logical path. The estimate is compared only with the documented 8,000-character reference used when the context window is unknown; Codex otherwise uses at most 2% of the model context, which can differ. `--home <home>` is an optional override for testing or inspecting another user scope. This read-only inventory excludes Codex admin/system skills and does not read `~/.codex/config.toml`, so it cannot report config-enabled state, configured project-root markers, or the exact skills loaded for a run. Instructree does not install skills, upload files, or write to either scope. The contract is grounded in the official [Codex skills documentation](https://developers.openai.com/codex/skills); bounded recursion and canonical deduplication are checked against the pinned Codex [discovery](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/discovery.rs) and [merge](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/host_merge.rs) implementations.
+`skills [cwd] [--client codex]` inventories the user `~/.agents/skills` scope and each `.agents/skills` directory from the current directory to the repository root. It recursively scans the depth-bounded local roots, follows symlinked skill folders, deduplicates canonical targets, skips hidden descendants, and keeps output paths logical and repository-relative. It reports possible duplicate names with source lines, malformed `SKILL.md` metadata, scan failures, and an approximate initial-list character estimate that includes name, description, and logical path. It also reads the supported skill subset of user `~/.codex/config.toml`, applying current Codex name/path selector and later-rule precedence to report disabled candidates, unmatched rules, catalog injection, bundled-skill state, and `max_context_tokens`. Unsupported relevant syntax fails closed: no user rules are applied and the affected lines are reported. The estimate is compared only with the documented 8,000-character reference used when the context window is unknown; Codex otherwise uses at most 2% of the model context, which can differ. `--home <home>` is an optional override for testing or inspecting another user scope. This read-only audit excludes admin/system and plugin skills, session flags, project config (which current Codex main does not apply to skill rules), product restrictions, and configured project-root markers, so it does not claim the exact loaded list. Instructree does not install skills, upload files, or write to either scope. The config behavior is documented in the pinned [Codex skill-config research note](docs/research/codex-skill-config.md); discovery remains grounded in official [Codex skills documentation](https://developers.openai.com/codex/skills) and pinned Codex [discovery](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/discovery.rs) and [merge](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/host_merge.rs) implementations.
 
 ## CI
 
