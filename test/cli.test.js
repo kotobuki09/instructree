@@ -35,6 +35,31 @@ test("init creates a GitHub Actions workflow without overwriting it", async (con
   assert.equal(await fs.readFile(workflowPath, "utf8"), "# keep me\n");
 });
 
+test("init --code-scanning creates a fork-safe SARIF workflow without overwriting it", async (context) => {
+  const root = await fixture({});
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+  const output = [];
+
+  const exitCode = await run(["init", root, "--code-scanning"], { log: (value) => output.push(value) });
+  const workflowPath = path.join(root, ".github", "workflows", "code-scanning.yml");
+  const workflow = await fs.readFile(workflowPath, "utf8");
+
+  assert.equal(exitCode, 0);
+  assert.equal(output[0], "created .github/workflows/code-scanning.yml");
+  assert.match(workflow, /^name: Instructree code scanning$/m);
+  assert.match(workflow, /^permissions:\n  contents: read$/m);
+  assert.match(workflow, /security-events: write/);
+  assert.match(workflow, /github\.event_name != 'pull_request'/);
+  assert.match(workflow, /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/);
+  assert.match(workflow, /npx --yes github:kotobuki09\/instructree#v0\.7\.1 scan \. --sarif > instructree\.sarif/);
+  assert.match(workflow, /uses: github\/codeql-action\/upload-sarif@v4/);
+  assert.match(workflow, /if: \$\{\{ steps\.scan\.outcome == 'failure' \}\}/);
+
+  await fs.writeFile(workflowPath, "# keep code scanning\n");
+  await assert.rejects(() => run(["init", root, "--code-scanning"]), /workflow already exists/);
+  assert.equal(await fs.readFile(workflowPath, "utf8"), "# keep code scanning\n");
+});
+
 test("imports command reports only import-policy failures", async (context) => {
   const root = await fixture({
     ".agents/skills/broken/SKILL.md": "# Missing frontmatter\n",
@@ -123,4 +148,9 @@ test("rejects incompatible or unsupported SARIF options", async () => {
   await assert.rejects(() => run(["scan", "--json", "--sarif"]), /cannot be used together/);
   await assert.rejects(() => run(["imports", "--sarif"]), /only be used with scan/);
   await assert.rejects(() => run(["explain", "AGENTS.md", "--sarif"]), /only be used with scan/);
+});
+
+test("rejects code-scanning flag outside init and with init policy options", async () => {
+  await assert.rejects(() => run(["scan", "--code-scanning"]), /only be used with init/);
+  await assert.rejects(() => run(["init", "--code-scanning", "--strict"]), /init does not accept output or policy options/);
 });

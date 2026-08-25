@@ -14,7 +14,7 @@ Usage:
   instructree [scan] [root] [--json | --sarif] [--strict]
   instructree imports [root] [--json] [--strict]
   instructree explain <file> [--root <root>] [--effective] [--json]
-  instructree init [root]
+  instructree init [root] [--code-scanning]
   instructree --help | --version
 
 Exit codes:
@@ -30,6 +30,7 @@ function parseArguments(argv) {
     sarif: false,
     strict: false,
     effective: false,
+    codeScanning: false,
     root: null,
     target: null,
   };
@@ -40,6 +41,7 @@ function parseArguments(argv) {
     else if (argument === "--sarif") options.sarif = true;
     else if (argument === "--strict") options.strict = true;
     else if (argument === "--effective") options.effective = true;
+    else if (argument === "--code-scanning") options.codeScanning = true;
     else if (argument === "--root") {
       options.root = argv[index + 1];
       index += 1;
@@ -68,6 +70,9 @@ function parseArguments(argv) {
   }
   if (options.sarif && options.command !== "scan") {
     throw new Error("--sarif can only be used with scan");
+  }
+  if (options.codeScanning && options.command !== "init") {
+    throw new Error("--code-scanning can only be used with init");
   }
   if (options.command === "init" && (options.json || options.strict || options.effective)) {
     throw new Error("init does not accept output or policy options");
@@ -120,6 +125,56 @@ jobs:
   return 0;
 }
 
+async function initializeCodeScanningWorkflow(root, version, io) {
+  const resolvedRoot = await fs.realpath(path.resolve(root));
+  const workflowDirectory = await ensureLocalDirectory(resolvedRoot, ".github/workflows");
+  const workflowPath = path.join(workflowDirectory, "code-scanning.yml");
+  const workflow = `name: Instructree code scanning
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  instructree:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Generate Instructree SARIF
+        id: scan
+        continue-on-error: true
+        run: npx --yes github:kotobuki09/instructree#v${version} scan . --sarif > instructree.sarif
+      - name: Upload Instructree SARIF
+        if: \${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: instructree.sarif
+          category: instructree
+      - name: Enforce Instructree policy
+        if: \${{ steps.scan.outcome == 'failure' }}
+        run: exit 1
+`;
+  try {
+    await fs.writeFile(workflowPath, workflow, { encoding: "utf8", flag: "wx" });
+  } catch (error) {
+    if (error.code === "EEXIST") throw new Error("workflow already exists: .github/workflows/code-scanning.yml");
+    throw error;
+  }
+  io.log("created .github/workflows/code-scanning.yml");
+  return 0;
+}
+
 function jsonResult(result, command) {
   if (command === "imports") {
     return JSON.stringify({ root: result.root, ...result.imports }, null, 2);
@@ -151,6 +206,9 @@ export async function run(argv, io = console) {
   }
   if (options.command === "init") {
     const packageJson = JSON.parse(await fs.readFile(packagePath, "utf8"));
+    if (options.codeScanning) {
+      return initializeCodeScanningWorkflow(options.root, packageJson.version, io);
+    }
     return initializeWorkflow(options.root, packageJson.version, io);
   }
 
