@@ -230,6 +230,39 @@ export function formatSkills(result, { showAll = false } = {}) {
   return lines.join("\n");
 }
 
+export function formatStarter(result) {
+  const lines = [
+    `${bold("instructree starter")} ${dim("· read-only Codex companion audit")}`,
+    `${dim("repository cwd:")} ${result.repository.currentDirectory}`,
+    `${dim("catalog:")} ${result.catalog.candidateCount} candidates · ${result.catalog.configuredEstimatedInitialListChars}/${result.catalog.unknownContextWindowReferenceChars} configured estimate chars`,
+    "",
+    cyan(`focused stack · ${result.summary.ready}/${result.summary.total} ready`),
+  ];
+  const marker = { ready: "✓", disabled: "○", invalid: "!", missing: "–" };
+  for (const companion of result.companions) {
+    const status = companion.status === "ready"
+      ? companion.status
+      : companion.status === "missing"
+        ? dim(companion.status)
+        : yellow(companion.status);
+    const count = companion.candidateCount > 1 ? ` · ${companion.candidateCount} candidates` : "";
+    lines.push(`${marker[companion.status]} ${companion.name} · ${status}${count}`);
+    lines.push(`  ${dim(companion.purpose)}`);
+    lines.push(`  ${dim(companion.skillUrl)}`);
+  }
+
+  const missing = result.companions.filter((companion) => companion.status === "missing");
+  lines.push("", cyan("commands for missing companions"));
+  if (missing.length === 0) lines.push(dim("none"));
+  else missing.forEach((companion) => lines.push(`$ ${companion.installCommand}`));
+  lines.push(
+    "",
+    yellow("Review each linked SKILL.md before installation; skills influence agent decisions."),
+    dim("This command does not install or change skills. No files changed."),
+  );
+  return lines.join("\n");
+}
+
 export function formatDoctor(result) {
   const { project: projectConfiguration } = result.configuration;
   const { user, project } = result.instructions;

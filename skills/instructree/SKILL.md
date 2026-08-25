@@ -29,6 +29,7 @@ Choose the narrowest command that answers the request:
 - `instructree explain <file> --root . --effective` includes recursive Copilot CLI imports.
 - `instructree imports . --json` audits the recursive `@path` graph.
 - `instructree skills . --client codex` concisely audits Codex user and repository-local skill candidates plus supported user `~/.codex/config.toml` skill settings without installing, writing, or uploading anything. It reports disabled candidates, unmatched rules, unsupported relevant syntax, and configured catalog pressure. Add `--all` for every human-readable candidate or `--json` for the complete structured object. The `--client codex` flag may be omitted because `skills` is Codex-specific; use optional `--home <home>` only to inspect a different user scope.
+- `instructree starter .` checks a focused six-skill Codex engineering stack against that local inventory, classifies companions as ready, disabled, invalid, or missing, and prints install commands only for missing skills. It is read-only and does not call the directory or install anything. Review each linked `SKILL.md` before installation; add `--json` for deterministic output.
 - `instructree doctor .` produces one share-safe Codex pre-session report covering supported user project settings, user instructions, the current project chain, and summarized skill state. Add `--json` for deterministic structured output.
 - `instructree scan . --sarif` emits SARIF 2.1.0 for code-scanning integrations.
 - Add `--strict` only when warnings should fail the check.

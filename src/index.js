@@ -5,6 +5,7 @@ import { matchesGlob } from "./glob.js";
 import { analyze } from "./rules.js";
 import { buildImportGraph } from "./imports.js";
 export { auditCodexSkills } from "./skills.js";
+export { auditCodexStarter } from "./starter.js";
 
 function normalize(relativePath) {
   return relativePath.split(path.sep).join("/");

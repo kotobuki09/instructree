@@ -45,6 +45,14 @@ Diagnose Codex instructions, supported user config, and skill state in one share
 instructree doctor
 ```
 
+Audit a focused Codex engineering stack against the skills already on disk:
+
+```bash
+instructree starter
+```
+
+The starter audit is read-only. It classifies six source-grounded companions as ready, disabled, invalid, or missing and prints install commands only for missing skills. Review every linked `SKILL.md` before installation because skills influence agent decisions.
+
 If Codex appears to ignore a parent file, follow the source-grounded [Codex AGENTS.md debugging guide](https://kotobuki09.github.io/instructree/codex-agents-md-debugger.html) for project-root markers, overrides, byte budgets, user instructions, and disabled skills.
 
 Trace the Codex project instructions for one file:
@@ -141,6 +149,7 @@ The formats are grounded in the current [OpenAI Codex AGENTS.md guide](https://l
 instructree [scan] [root] [--json | --sarif] [--strict]
 instructree imports [root] [--json] [--strict]
 instructree skills [cwd] [--home <home>] [--client codex] [--all | --json]
+instructree starter [cwd] [--home <home>] [--json]
 instructree doctor [cwd] [--home <home>] [--json]
 instructree explain <file> [--root <root>] [--client codex [--fallback <name>]... [--max-bytes <n>] | --effective] [--json]
 instructree init [root] [--code-scanning]
@@ -171,6 +180,9 @@ instructree explain packages/api/src/routes.ts --client codex --json
 # Audit Codex skill candidates and supported user config without installing anything
 instructree skills . --client codex --json
 
+# Check a focused companion stack and print commands only for missing skills
+instructree starter . --json
+
 # Produce one share-safe Codex setup report before starting a session
 instructree doctor . --json
 
@@ -197,6 +209,8 @@ Exit codes are `0` for a passing policy, `1` for diagnostics that fail the selec
 Candidate existence, empty-file behavior, and byte truncation are also checked against the pinned [Codex implementation](https://github.com/openai/codex/blob/9be8d6e1c3dbb145d2d7ac3ba46729340e6d8d40/codex-rs/core/src/agents_md.rs), because those details are more precise than the user guide.
 
 `skills [cwd] [--client codex]` inventories the user `~/.agents/skills` scope and each `.agents/skills` directory from the current directory to the repository root. It recursively scans the depth-bounded local roots, follows symlinked skill folders, deduplicates canonical targets, skips hidden descendants, and keeps output paths logical and repository-relative. It reports possible duplicate names with source lines, malformed `SKILL.md` metadata, scan failures, and an approximate initial-list character estimate that includes name, description, and logical path. It also reads the supported skill subset of user `~/.codex/config.toml`, applying current Codex name/path selector and later-rule precedence to report disabled candidates, unmatched rules, catalog injection, bundled-skill state, and `max_context_tokens`. Unsupported relevant syntax fails closed: no user rules are applied and the affected lines are reported. The estimate is compared only with the documented 8,000-character reference used when the context window is unknown; Codex otherwise uses at most 2% of the model context, which can differ. `--home <home>` is an optional override for testing or inspecting another user scope. This read-only audit excludes admin/system and plugin skills, session flags, project config (which current Codex main does not apply to skill rules), product restrictions, and configured project-root markers, so it does not claim the exact loaded list. Instructree does not install skills, upload files, or write to either scope. The config behavior is documented in the pinned [Codex skill-config research note](docs/research/codex-skill-config.md); discovery remains grounded in official [Codex skills documentation](https://developers.openai.com/codex/skills) and pinned Codex [discovery](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/discovery.rs) and [merge](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/host_merge.rs) implementations.
+
+`starter [cwd]` reuses that local inventory to check a focused six-skill engineering stack covering discovery, testing, diagnosis, review, research, and verification. It reports ready, disabled, invalid, and missing states using logical paths, includes the current catalog-pressure context, and prints installation commands only for missing companions. It does not call the skills directory, download packages, edit configuration, or install anything. The selection is a dated, source-linked recommendation rather than a claim that popularity proves quality or task fit; review each linked `SKILL.md` before installation.
 
 `doctor [cwd]` combines the focused Codex project-instruction and skill audits into one deterministic pre-session report. It reads supported top-level `project_doc_max_bytes`, `project_doc_fallback_filenames`, and `project_root_markers` values from user `~/.codex/config.toml`; identifies the selected non-empty user `AGENTS.override.md` or `AGENTS.md`; resolves the project chain for the current directory; and summarizes disabled skills, duplicates, metadata failures, scan errors, and context pressure. When a nearer project marker stops discovery inside an outer project, it reports the ignored parent instructions using redacted `<parent>` labels and identifies the outer marker without exposing an absolute path. JSON and human output use logical paths and never include the absolute home or repository path. Unsupported relevant project-setting syntax fails closed, so the project chain is reported as unavailable instead of applying partial settings. This is a static user-configured preview, not a claim about a running or resumed session: managed config, profiles, session flags, project trust, remote environments, plugins, and product restrictions remain outside its boundary. See the pinned [Codex doctor research note](docs/research/codex-doctor.md) and [root-boundary research note](docs/research/codex-root-boundary.md).
 

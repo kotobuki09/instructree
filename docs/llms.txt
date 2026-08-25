@@ -22,6 +22,7 @@ Use Instructree to run a share-safe Codex pre-session doctor; debug parent AGENT
 ## Try it
 
 - [Codex doctor](https://github.com/kotobuki09/instructree#commands): Run `instructree doctor .` for one redacted report covering supported user project settings, user instructions, the current project chain, and skill state; add `--json` for deterministic structured output.
+- [Codex starter audit](https://github.com/kotobuki09/instructree/blob/main/docs/codex-setup.md): Run `instructree starter .` to compare a focused engineering stack with local skill state and print commands only for missing companions. The command is read-only; review every linked `SKILL.md` before installation.
 - [Codex root-boundary research](https://github.com/kotobuki09/instructree/blob/main/docs/research/codex-root-boundary.md): Explain why a nested `.git` or configured marker can hide parent instructions and how the doctor reports that boundary without exposing local paths.
 - [CLI install and examples](https://github.com/kotobuki09/instructree#try-it): Run the pinned release without an API key or repository upload.
 - [Codex local-scope audit](https://github.com/kotobuki09/instructree#commands): Inspect user and repository-local `.agents/skills` candidates, supported user `skills.config` state, duplicates, metadata, and prompt-list pressure concisely with `instructree skills . --client codex`; add `--all` or `--json` for the full inventory.

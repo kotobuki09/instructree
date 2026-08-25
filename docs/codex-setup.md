@@ -22,6 +22,16 @@ npx --yes github:kotobuki09/instructree#v0.17.0 init --code-scanning
 
 The generated workflow uses least-privilege permissions, avoids privileged SARIF uploads from forked pull requests, and refuses to overwrite an existing workflow.
 
+## Audit the focused starter stack
+
+Turn the recommendations below into a local readiness report:
+
+```bash
+instructree starter .
+```
+
+The command reuses Instructree's Codex skill inventory and classifies each companion as ready, disabled by supported user config, invalid on disk, or missing. It includes catalog-pressure context and prints installation commands only for missing companions. It is read-only: it does not call the directory, download packages, edit config, or install skills. Review each linked `SKILL.md` before installation because skills influence agent decisions. Add `--json` for deterministic output or `--home <home>` to inspect another user scope.
+
 ## Diagnose the whole Codex setup
 
 Before starting a session, run one share-safe report from the working directory:
@@ -67,21 +77,21 @@ This is a deliberately small stack. Popularity is a filter, not a reason to load
 | Need | Skill | Why it is included |
 | --- | --- | --- |
 | Discover a missing capability | [`vercel-labs/skills@find-skills`](https://skills.sh/vercel-labs/skills/find-skills) | Official directory discovery workflow and the top all-time skill when reviewed on 2026-08-26. |
-| Review a change | [`mattpocock/skills@code-review`](https://skills.sh/mattpocock/skills/code-review) | High-adoption, evidence-first review workflow. |
 | Develop against tests | [`mattpocock/skills@tdd`](https://skills.sh/mattpocock/skills/tdd) | High-adoption test-driven implementation loop. |
+| Diagnose a difficult defect | [`mattpocock/skills@diagnosing-bugs`](https://skills.sh/mattpocock/skills/diagnosing-bugs) | High-adoption, hypothesis-driven debugging workflow. |
+| Review a change | [`mattpocock/skills@code-review`](https://skills.sh/mattpocock/skills/code-review) | High-adoption, evidence-first review workflow. |
 | Verify before claiming completion | [`obra/superpowers@verification-before-completion`](https://skills.sh/obra/superpowers/verification-before-completion) | Requires fresh command evidence before completion claims. |
 | Research current ecosystems | [`mattpocock/skills@research`](https://skills.sh/mattpocock/skills/research) | Source-grounded research for changing tools and distribution channels. |
-| Plan positioning and launch | [`phuryn/pm-skills@gtm-strategy`](https://skills.sh/phuryn/pm-skills/gtm-strategy) | Covers channels, messaging, metrics, and launch timing from an active, established skill repository. |
 
 Install only missing skills. Review the linked `SKILL.md` before installation because skills influence agent decisions.
 
 ```bash
-npx skills add vercel-labs/skills@find-skills -g --agent codex
-npx skills add mattpocock/skills@code-review -g --agent codex
-npx skills add mattpocock/skills@tdd -g --agent codex
-npx skills add obra/superpowers@verification-before-completion -g --agent codex
-npx skills add mattpocock/skills@research -g --agent codex
-npx skills add phuryn/pm-skills@gtm-strategy -g --agent codex
+npx skills add vercel-labs/skills --skill find-skills -g --agent codex
+npx skills add mattpocock/skills --skill tdd -g --agent codex
+npx skills add mattpocock/skills --skill diagnosing-bugs -g --agent codex
+npx skills add mattpocock/skills --skill code-review -g --agent codex
+npx skills add obra/superpowers --skill verification-before-completion -g --agent codex
+npx skills add mattpocock/skills --skill research -g --agent codex
 ```
 
-The first five are engineering guardrails; the final skill is for positioning and launch work. Do not invoke it during ordinary implementation.
+The stack covers common engineering phases without trying to load a specialist skill for every possible task. Popularity is only a discovery filter; it does not establish quality, security, or fit for a particular repository.

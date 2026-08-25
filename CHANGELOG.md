@@ -4,6 +4,8 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+- Add `instructree starter [cwd]` for a read-only readiness audit of a focused, source-grounded Codex engineering stack, with install commands only for missing companions.
+
 ## 0.17.0 — 2026-08-26
 
 - Make `instructree doctor` report redacted parent instruction files hidden by a nearer configured project-root marker, including the nearest outer marker that establishes the boundary.
