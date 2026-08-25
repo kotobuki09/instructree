@@ -4,6 +4,8 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+## 0.15.0 — 2026-08-26
+
 - Read supported user `~/.codex/config.toml` skill settings, resolve current Codex name/path rule precedence, and report disabled candidates, unmatched rules, and config issues without exposing absolute paths.
 
 ## 0.14.0 — 2026-08-26

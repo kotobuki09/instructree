@@ -2,14 +2,14 @@
 
 > Instructree is a dependency-free CLI, GitHub Action, and Codex skill that maps and lints repository-scoped coding-agent instructions without uploading repository content.
 
-Use Instructree to inspect the exact configured Codex AGENTS.md and AGENTS.override.md project chain; audit Codex user and repository-local skill candidate scopes plus supported user skill config; and map CLAUDE.md, GitHub Copilot instructions and recursive imports, Agent Skills, custom agents, agentic workflows, Cursor rules, Windsurf rules, and GEMINI.md. The current release is v0.14.0 and requires Node.js 20 or later.
+Use Instructree to inspect the exact configured Codex AGENTS.md and AGENTS.override.md project chain; audit Codex user and repository-local skill candidate scopes plus supported user skill config; and map CLAUDE.md, GitHub Copilot instructions and recursive imports, Agent Skills, custom agents, agentic workflows, Cursor rules, Windsurf rules, and GEMINI.md. The current release is v0.15.0 and requires Node.js 20 or later.
 
 ## Start here
 
 - [Project site](https://kotobuki09.github.io/instructree/): Product overview, example output, and verification evidence.
 - [Repository](https://github.com/kotobuki09/instructree): Source code, README, issue tracker, and contribution guide.
 - [Codex setup](https://github.com/kotobuki09/instructree/blob/main/docs/codex-setup.md): Install the native Codex skill and use the focused companion stack.
-- [Release v0.14.0](https://github.com/kotobuki09/instructree/releases/tag/v0.14.0): Current release notes and verified package assets.
+- [Release v0.15.0](https://github.com/kotobuki09/instructree/releases/tag/v0.15.0): Current release notes and verified package assets.
 
 ## Technical references
 
