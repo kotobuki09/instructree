@@ -9,6 +9,7 @@ Map and lint `AGENTS.md`, `CLAUDE.md`, Copilot instructions, agent skills, and a
 [![CI](https://github.com/kotobuki09/instructree/actions/workflows/ci.yml/badge.svg)](https://github.com/kotobuki09/instructree/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2ea44f.svg)](LICENSE)
 [![Node.js 20+](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Skills.sh](https://img.shields.io/badge/Skills.sh-Instructree-111111)](https://www.skills.sh/kotobuki09/instructree/instructree)
 
 </div>
 
