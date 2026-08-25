@@ -22,38 +22,38 @@ Coding agents now read instructions from several files with different scopes. On
 No install or API key:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.8.0
+npx --yes github:kotobuki09/instructree#v0.9.0
 ```
 
 Add the same audit to every pull request without copying workflow YAML:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.8.0 init
+npx --yes github:kotobuki09/instructree#v0.9.0 init
 ```
 
 Send findings to GitHub code scanning with one command:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.8.0 init --code-scanning
+npx --yes github:kotobuki09/instructree#v0.9.0 init --code-scanning
 ```
 
 Ask what may apply to one file:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.8.0 explain src/api/client.ts --effective
+npx --yes github:kotobuki09/instructree#v0.9.0 explain src/api/client.ts --effective
 ```
 
 Install from GitHub if you want the command everywhere:
 
 ```bash
-npm install --global github:kotobuki09/instructree#v0.8.0
+npm install --global github:kotobuki09/instructree#v0.9.0
 instructree
 ```
 
 Install the native skill for Codex with GitHub CLI 2.90 or later:
 
 ```bash
-gh skill install kotobuki09/instructree instructree@v0.8.0 --agent codex --scope user
+gh skill install kotobuki09/instructree instructree@v0.9.0 --agent codex --scope user
 ```
 
 Or use the cross-agent `skills` installer: `npx skills add kotobuki09/instructree --skill instructree -g --agent codex`.
@@ -164,7 +164,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: kotobuki09/instructree@v0.8.0
+      - uses: kotobuki09/instructree@v0.9.0
         with:
           strict: true
 ```

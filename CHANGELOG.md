@@ -2,6 +2,13 @@
 
 All notable changes to Instructree are documented here.
 
+## 0.9.0 — 2026-08-26
+
+- Discover Codex `AGENTS.override.md` files at repository and nested directory scope.
+- Label overrides as Codex-specific guidance while keeping cross-client `AGENTS.md` files visible.
+- Keep Codex overrides outside GitHub Copilot CLI `@path` import expansion to avoid unsupported missing-import diagnostics.
+- Refresh the native Codex skill fallback to the audited override-aware implementation.
+
 ## 0.8.0 — 2026-08-26
 
 - Add `instructree init [root] --code-scanning` to scaffold a least-privilege, fork-safe SARIF workflow.
