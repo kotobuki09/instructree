@@ -54,11 +54,12 @@ export function formatScan(result) {
 }
 
 export function formatExplain(result, showEffective = false) {
-  const lines = [`${bold("instructree explain")} ${dim("·")} ${result.target}`, ""];
+  const client = result.client === "codex" ? ` ${dim("· Codex project chain")}` : "";
+  const lines = [`${bold("instructree explain")} ${dim("·")} ${result.target}${client}`, ""];
   if (result.applicable.length === 0) {
     lines.push(dim("No automatically applicable instruction files found."));
   } else {
-    lines.push(cyan("may apply, broad → specific"));
+    lines.push(cyan(result.client === "codex" ? "applies, broad → specific" : "may apply, broad → specific"));
     result.applicable.forEach((file, index) => {
       lines.push(`${index + 1}. ${file.path} ${dim(`[${file.family} · ${file.reason}]`)}`);
     });
@@ -72,7 +73,14 @@ export function formatExplain(result, showEffective = false) {
     if (result.effective.length === 0) lines.push(dim("No imported instruction files."));
     else result.effective.forEach((file) => lines.push(`- ${file.path} ${dim(`[from ${file.importedBy}]`)}`));
   }
-  lines.push("", dim("Static result: clients can differ in discovery and precedence behavior."));
+  lines.push(
+    "",
+    dim(
+      result.client === "codex"
+        ? "Repository-only result for standard Codex project instruction files."
+        : "Static result: clients can differ in discovery and precedence behavior.",
+    ),
+  );
   return lines.join("\n");
 }
 

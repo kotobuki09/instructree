@@ -76,6 +76,33 @@ test("discovers Codex AGENTS.override.md files with directory scope", async (con
   );
 });
 
+test("explains the Codex project chain with override precedence through the target directory", async (context) => {
+  const root = await fixture({
+    "AGENTS.md": "# Root base\n",
+    "AGENTS.override.md": "# Root override\n",
+    "packages/AGENTS.md": "# Packages base\n",
+    "packages/AGENTS.override.md": "  \n",
+    "packages/api/AGENTS.md": "# API base\n",
+    "packages/api/AGENTS.override.md": "# API override\n",
+    "packages/api/src/AGENTS.md": "# Source rules\n",
+    "packages/api/src/app.js": "export {};\n",
+    "packages/api/src/deeper/AGENTS.md": "# Below target\n",
+    "sibling/AGENTS.override.md": "# Sibling rules\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+
+  const result = await explain("packages/api/src/app.js", root, { client: "codex" });
+
+  assert.equal(result.client, "codex");
+  assert.equal(result.profile, "codex");
+  assert.deepEqual(
+    result.applicable.map((item) => item.path),
+    ["AGENTS.override.md", "packages/AGENTS.md", "packages/api/AGENTS.override.md", "packages/api/src/AGENTS.md"],
+  );
+  assert.deepEqual(result.available, []);
+  assert.deepEqual(result.effective, []);
+});
+
 test("discovers skills stored as direct children of a catalog root", async (context) => {
   const root = await fixture({
     "review-code/SKILL.md": "---\nname: review-code\ndescription: Review changed code\n---\n# Review\n",

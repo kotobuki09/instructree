@@ -13,7 +13,7 @@ function usage() {
 Usage:
   instructree [scan] [root] [--json | --sarif] [--strict]
   instructree imports [root] [--json] [--strict]
-  instructree explain <file> [--root <root>] [--effective] [--json]
+  instructree explain <file> [--root <root>] [--client codex | --effective] [--json]
   instructree init [root] [--code-scanning]
   instructree --help | --version
 
@@ -30,6 +30,7 @@ function parseArguments(argv) {
     sarif: false,
     strict: false,
     effective: false,
+    client: null,
     codeScanning: false,
     root: null,
     target: null,
@@ -41,6 +42,11 @@ function parseArguments(argv) {
     else if (argument === "--sarif") options.sarif = true;
     else if (argument === "--strict") options.strict = true;
     else if (argument === "--effective") options.effective = true;
+    else if (argument === "--client") {
+      options.client = argv[index + 1];
+      index += 1;
+      if (!options.client || options.client.startsWith("-")) throw new Error("--client requires a value");
+    }
     else if (argument === "--code-scanning") options.codeScanning = true;
     else if (argument === "--root") {
       options.root = argv[index + 1];
@@ -64,6 +70,15 @@ function parseArguments(argv) {
   }
   if (options.effective && options.command !== "explain") {
     throw new Error("--effective can only be used with explain");
+  }
+  if (options.client && options.client !== "codex") {
+    throw new Error(`unknown client: ${options.client}`);
+  }
+  if (options.client && options.command !== "explain") {
+    throw new Error("--client can only be used with explain");
+  }
+  if (options.effective && options.client) {
+    throw new Error("--effective and --client cannot be used together");
   }
   if (options.json && options.sarif) {
     throw new Error("--json and --sarif cannot be used together");
@@ -182,6 +197,7 @@ function jsonResult(result, command) {
   return JSON.stringify(
     {
       root: result.root,
+      ...(result.client ? { client: result.client, profile: result.profile } : {}),
       ...(result.target ? { target: result.target, applicable: result.applicable, available: result.available } : {}),
       ...(result.target ? { effective: result.effective } : {}),
       files: result.files.map(({ absolutePath, content, frontmatter, ...file }) => file),
@@ -214,7 +230,7 @@ export async function run(argv, io = console) {
 
   const result =
     options.command === "explain"
-      ? await explain(options.target, options.root ?? process.cwd())
+      ? await explain(options.target, options.root ?? process.cwd(), { client: options.client })
       : await scan(options.root);
   const sarif = options.sarif
     ? formatSarif(result, JSON.parse(await fs.readFile(packagePath, "utf8")).version)

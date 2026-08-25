@@ -98,6 +98,44 @@ test("rejects --effective outside explain", async () => {
   await assert.rejects(() => run(["scan", "--effective"]), /only be used with explain/);
 });
 
+test("explain --client codex emits profile metadata without changing neutral JSON", async (context) => {
+  const root = await fixture({
+    "AGENTS.md": "# Base\n",
+    "AGENTS.override.md": "# Override\n",
+    "src/app.js": "export {};\n",
+  });
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+  const codexOutput = [];
+  const neutralOutput = [];
+
+  await run(["explain", "src/app.js", "--root", root, "--client", "codex", "--json"], {
+    log: (value) => codexOutput.push(value),
+  });
+  await run(["explain", "src/app.js", "--root", root, "--json"], {
+    log: (value) => neutralOutput.push(value),
+  });
+  process.exitCode = 0;
+
+  const codex = JSON.parse(codexOutput[0]);
+  const neutral = JSON.parse(neutralOutput[0]);
+  assert.equal(codex.client, "codex");
+  assert.equal(codex.profile, "codex");
+  assert.deepEqual(codex.applicable.map((item) => item.path), ["AGENTS.override.md"]);
+  assert.equal(neutral.client, undefined);
+  assert.equal(neutral.profile, undefined);
+  assert.deepEqual(neutral.applicable.map((item) => item.path), ["AGENTS.md", "AGENTS.override.md"]);
+});
+
+test("rejects unsupported --client values and combinations", async () => {
+  await assert.rejects(() => run(["explain", "src/app.js", "--client", "claude"]), /unknown client: claude/);
+  await assert.rejects(() => run(["explain", "src/app.js", "--client"]), /--client requires a value/);
+  await assert.rejects(() => run(["scan", "--client", "codex"]), /only be used with explain/);
+  await assert.rejects(
+    () => run(["explain", "src/app.js", "--effective", "--client", "codex"]),
+    /--effective and --client cannot be used together/,
+  );
+});
+
 test("scan SARIF emits GitHub-compatible rules, severities, and relative locations", async (context) => {
   const root = await fixture({
     "AGENTS.md": "@docs/missing.md\n",

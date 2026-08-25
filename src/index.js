@@ -26,11 +26,50 @@ function isInsideScope(target, scope) {
   return scope === "." || target === scope || target.startsWith(`${scope}/`);
 }
 
-export async function explain(target, root = process.cwd()) {
+function codexProjectChain(files, relativeTarget) {
+  const targetDirectory = path.posix.dirname(relativeTarget);
+  const directories = ["."];
+  let current = "";
+  if (targetDirectory !== ".") {
+    for (const segment of targetDirectory.split("/")) {
+      current = current ? `${current}/${segment}` : segment;
+      directories.push(current);
+    }
+  }
+
+  const filesByPath = new Map(files.map((file) => [file.path, file]));
+  return directories.flatMap((directory) => {
+    const prefix = directory === "." ? "" : `${directory}/`;
+    const override = filesByPath.get(`${prefix}AGENTS.override.md`);
+    const base = filesByPath.get(`${prefix}AGENTS.md`);
+    const selected = [override, base].find((file) => file?.content.trim());
+    if (!selected) return [];
+    return [{
+      path: selected.path,
+      family: selected.family,
+      kind: selected.kind,
+      reason: directory === "." ? "repository-wide" : `directory scope: ${directory}/`,
+    }];
+  });
+}
+
+export async function explain(target, root = process.cwd(), options = {}) {
   const result = await scan(root);
   const relativeTarget = normalize(path.relative(result.root, path.resolve(result.root, target)));
   if (relativeTarget === ".." || relativeTarget.startsWith("../")) {
     throw new Error("the target must be inside the repository root");
+  }
+
+  if (options.client === "codex") {
+    return {
+      ...result,
+      target: relativeTarget,
+      client: "codex",
+      profile: "codex",
+      applicable: codexProjectChain(result.files, relativeTarget),
+      available: [],
+      effective: [],
+    };
   }
 
   const applicable = [];

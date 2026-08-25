@@ -111,14 +111,14 @@ clean · 1 roots · 3 imported files · 0 errors
 
 The audit rejects absolute paths, repository escapes, symlink escapes, missing targets, cycles, oversized files, and graphs beyond its explicit safety limits. `GEMINI.md` and `*.instructions.md` references are not expanded because Copilot's documentation says it does not expand them.
 
-The formats are grounded in the current [OpenAI Codex AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md), [VS Code custom-instructions documentation](https://github.com/microsoft/vscode-docs/blob/main/docs/agent-customization/custom-instructions.md), [GitHub customization matrix](https://docs.github.com/en/copilot/reference/customization-cheat-sheet), and [Agent Skills documentation](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills).
+The formats are grounded in the current [OpenAI Codex AGENTS.md guide](https://learn.chatgpt.com/docs/agent-configuration/agents-md), [VS Code custom-instructions documentation](https://github.com/microsoft/vscode-docs/blob/main/docs/agent-customization/custom-instructions.md), [GitHub customization matrix](https://docs.github.com/en/copilot/reference/customization-cheat-sheet), and [Agent Skills documentation](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills).
 
 ## Commands
 
 ```text
 instructree [scan] [root] [--json | --sarif] [--strict]
 instructree imports [root] [--json] [--strict]
-instructree explain <file> [--root <root>] [--effective] [--json]
+instructree explain <file> [--root <root>] [--client codex | --effective] [--json]
 instructree init [root] [--code-scanning]
 instructree --help | --version
 ```
@@ -141,6 +141,9 @@ instructree --sarif > instructree.sarif
 # See the broad-to-specific instruction map for a target
 instructree explain packages/api/src/routes.ts --effective
 
+# Select the Codex project instruction chain for a target
+instructree explain packages/api/src/routes.ts --client codex --json
+
 # Audit the transitive Copilot import graph
 instructree imports --json
 
@@ -152,6 +155,8 @@ instructree init --code-scanning
 ```
 
 Exit codes are `0` for a passing policy, `1` for diagnostics that fail the selected policy, and `2` for invalid arguments or runtime errors.
+
+`explain <file> --client codex` follows the documented Codex project precedence from the repository root through the target file's directory. In each directory it selects a non-empty `AGENTS.override.md` first, otherwise a non-empty `AGENTS.md`, and reports at most one file per directory in broad-to-specific order. The JSON report identifies both `client` and `profile` as `codex`. Use plain `explain` for the neutral cross-client map; `--client codex` cannot be combined with `--effective`.
 
 ## CI
 
