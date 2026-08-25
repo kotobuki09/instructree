@@ -2,6 +2,13 @@
 
 All notable changes to Instructree are documented here.
 
+## 0.10.0 — 2026-08-26
+
+- Add `instructree explain <file> --client codex` for the actual repository project-instruction chain.
+- Apply Codex precedence by choosing the first non-empty `AGENTS.override.md`, otherwise `AGENTS.md`, in each directory from the repository root through the target directory.
+- Keep neutral cross-client `explain` behavior unchanged and reject ambiguous `--client codex --effective` combinations.
+- Include explicit `codex` client/profile metadata in JSON output and document the repository-only boundary.
+
 ## 0.9.0 — 2026-08-26
 
 - Discover Codex `AGENTS.override.md` files at repository and nested directory scope.

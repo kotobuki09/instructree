@@ -27,7 +27,7 @@ test("init creates a GitHub Actions workflow without overwriting it", async (con
   assert.equal(exitCode, 0);
   assert.equal(output[0], "created .github/workflows/instructree.yml");
   assert.match(workflow, /^name: instruction-lint$/m);
-  assert.match(workflow, /uses: kotobuki09\/instructree@v0\.9\.0/);
+  assert.match(workflow, /uses: kotobuki09\/instructree@v0\.10\.0/);
   assert.match(workflow, /strict: true/);
 
   await fs.writeFile(workflowPath, "# keep me\n");
@@ -51,7 +51,7 @@ test("init --code-scanning creates a fork-safe SARIF workflow without overwritin
   assert.match(workflow, /security-events: write/);
   assert.match(workflow, /github\.event_name != 'pull_request'/);
   assert.match(workflow, /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/);
-  assert.match(workflow, /npx --yes github:kotobuki09\/instructree#v0\.9\.0 scan \. --sarif > instructree\.sarif/);
+  assert.match(workflow, /npx --yes github:kotobuki09\/instructree#v0\.10\.0 scan \. --sarif > instructree\.sarif/);
   assert.match(workflow, /uses: github\/codeql-action\/upload-sarif@v4/);
   assert.match(workflow, /if: \$\{\{ steps\.scan\.outcome == 'failure' \}\}/);
 

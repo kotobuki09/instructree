@@ -3,7 +3,7 @@
 Instructree ships as both a CLI and an agent skill. With GitHub CLI 2.90 or later, install the versioned skill at user scope for Codex:
 
 ```bash
-gh skill install kotobuki09/instructree instructree@v0.9.0 --agent codex --scope user
+gh skill install kotobuki09/instructree instructree@v0.10.0 --agent codex --scope user
 ```
 
 Alternatively, use the cross-agent installer:
@@ -12,17 +12,17 @@ Alternatively, use the cross-agent installer:
 npx skills add kotobuki09/instructree --skill instructree -g --agent codex
 ```
 
-The skill tells Codex when to scan the repository, trace recursive imports, or explain the instruction scope for one file. It asks before downloading the CLI when no local command is available.
+The skill tells Codex when to scan the repository, trace recursive imports, or explain the instruction scope for one file. For a Codex target, `instructree explain <file> --client codex` reports the repository project-instruction chain using Codex override precedence. It asks before downloading the CLI when no local command is available.
 
 To add the same secure SARIF checks to a repository, run:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.9.0 init --code-scanning
+npx --yes github:kotobuki09/instructree#v0.10.0 init --code-scanning
 ```
 
 The generated workflow uses least-privilege permissions, avoids privileged SARIF uploads from forked pull requests, and refuses to overwrite an existing workflow.
 
-Instructree recognizes Codex-specific `AGENTS.override.md` files described in the official [OpenAI Codex AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md). They are shown with normal directory scope in `scan` and `explain`, while remaining outside GitHub Copilot CLI `@path` import expansion.
+Instructree recognizes Codex-specific `AGENTS.override.md` files described in the official [OpenAI Codex AGENTS.md guide](https://learn.chatgpt.com/docs/agent-configuration/agents-md). They are shown with normal directory scope in `scan` and neutral `explain`, while `explain --client codex` resolves one non-empty project instruction per directory. Codex overrides remain outside GitHub Copilot CLI `@path` import expansion.
 
 ## Focused companion stack
 

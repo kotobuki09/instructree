@@ -15,7 +15,7 @@ Use Instructree to establish which instruction files exist, which may apply to a
 Work from the repository root. Prefer an already installed `instructree` command or the checked-out package's local binary. If neither is available, ask before downloading executable packages, then use the pinned release:
 
 ```bash
-npx github:kotobuki09/instructree#6b7a96458bd5245e31472e9ebcc7210f28641577 scan .
+npx github:kotobuki09/instructree#57b363f443c8dd6383e45d435b4f5f04315db8fb scan .
 ```
 
 Do not add `--yes` unless the user has authorized non-interactive package downloads.
@@ -24,6 +24,7 @@ Choose the narrowest command that answers the request:
 
 - `instructree scan . --json` inventories supported files and emits stable diagnostics.
 - `instructree explain <file> --root .` shows instructions that may apply to one target.
+- `instructree explain <file> --root . --client codex` selects the Codex repository project-instruction chain.
 - `instructree explain <file> --root . --effective` includes recursive Copilot CLI imports.
 - `instructree imports . --json` audits the recursive `@path` graph.
 - `instructree scan . --sarif` emits SARIF 2.1.0 for code-scanning integrations.
@@ -33,6 +34,6 @@ Choose the narrowest command that answers the request:
 
 Report file paths, line numbers, diagnostic codes, and the command's exit status. Separate schema or path errors from warnings. Describe `always`/`never` conflicts as possible conflicts requiring human review, not proof of agent behavior.
 
-Instructree is static analysis. It does not upload repository content, call a model, or establish the exact precedence rules of every agent client. Treat `explain` as a map of what may apply.
+Instructree is static analysis. It does not upload repository content or call a model. Treat plain `explain` as a cross-client map of what may apply; use `--client codex` only for the documented repository project-instruction chain.
 
 Do not edit instruction files unless the user asked for changes. After an authorized fix, rerun the same command and report the before-and-after diagnostics.
