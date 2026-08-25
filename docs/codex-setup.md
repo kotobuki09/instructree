@@ -34,6 +34,18 @@ The doctor reads supported user `project_doc_max_bytes`, `project_doc_fallback_f
 
 This is a static pre-session preview. It deliberately does not claim to resolve managed configuration, profiles, session overrides, project trust, remote environments, plugins, or a resumed session. Unsupported relevant project-setting syntax fails closed instead of producing a partial chain. The boundary and pinned sources are recorded in the [Codex doctor research note](research/codex-doctor.md).
 
+### Debug a nested project-root boundary
+
+Codex stops at the nearest configured project-root marker. In a submodule, worktree, or directory containing an accidental nested `.git` entry, that can hide plausible parent `AGENTS.md` files. The doctor inspects only as far as the nearest outer marker and reports the hidden candidates with redacted labels:
+
+```text
+root boundary: 1 parent instruction ignored above selected project root
+- <parent>/AGENTS.md · ignored above selected project root
+- outer marker: .git at <parent>
+```
+
+The files remain outside the effective project chain; Instructree does not read their contents or claim that Codex loaded them. The behavior and current Codex sources are documented in the [root-boundary research note](research/codex-root-boundary.md).
+
 Instructree recognizes Codex-specific `AGENTS.override.md` files described in the official [OpenAI Codex AGENTS.md guide](https://learn.chatgpt.com/docs/agent-configuration/agents-md). They are shown with normal directory scope in `scan` and neutral `explain`, while `explain --client codex` resolves the first existing regular candidate per directory, even when that candidate is empty. Its JSON output reports the configured fallbacks, shared byte budget, included bytes, and truncation state. The empty-candidate and byte-budget details are checked against the pinned [Codex implementation](https://github.com/openai/codex/blob/9be8d6e1c3dbb145d2d7ac3ba46729340e6d8d40/codex-rs/core/src/agents_md.rs). Codex overrides remain outside GitHub Copilot CLI `@path` import expansion.
 
 ## Audit local skill candidate scopes

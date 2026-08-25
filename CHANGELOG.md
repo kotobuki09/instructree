@@ -4,6 +4,8 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+- Make `instructree doctor` report redacted parent instruction files hidden by a nearer configured project-root marker, including the nearest outer marker that establishes the boundary.
+
 ## 0.16.0 — 2026-08-26
 
 - Add `instructree doctor [cwd]` for one share-safe Codex pre-session report covering supported user project settings, user instructions, the current project chain, and summarized skill state.

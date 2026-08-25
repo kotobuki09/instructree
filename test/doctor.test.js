@@ -86,6 +86,13 @@ enabled = false
     marker: ".project-root",
     markers: [".project-root"],
     markerSource: "user",
+    boundary: {
+      status: "clear",
+      ignoredInstructionCount: 0,
+      ignoredInstructions: [],
+      outerMarker: null,
+      warnings: [],
+    },
   });
   assert.equal(report.instructions.user.selected.path, "~/.codex/AGENTS.md");
   assert.deepEqual(report.instructions.project.files.map((file) => file.path), [
@@ -142,4 +149,62 @@ test("doctor refuses to partially resolve project instructions from unsupported 
   assert.equal(report.configuration.project.status, "unsupported");
   assert.equal(report.instructions.project.status, "unavailable");
   assert.deepEqual(report.instructions.project.files, []);
+});
+
+test("doctor reports parent instructions hidden by a nearer project-root marker without leaking paths", async (context) => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "instructree-doctor-boundary-"));
+  const outer = path.join(temporary, "workspace");
+  const repository = path.join(outer, "module");
+  const cwd = path.join(repository, "src", "api");
+  const home = path.join(temporary, "home");
+  await writeFiles(outer, {
+    ".project/marker": "outer\n",
+    "AGENTS.override.md": "# Outer override\n",
+    "AGENTS.md": "# Shadowed outer file\n",
+    "module/.project/marker": "inner\n",
+    "module/AGENTS.md": "# Inner\n",
+  });
+  await fs.mkdir(cwd, { recursive: true });
+  await writeFiles(home, {
+    ".codex/config.toml": "project_root_markers = [\".project\"]\n",
+  });
+  context.after(() => fs.rm(temporary, { recursive: true, force: true }));
+
+  const report = await diagnoseCodex(cwd, home);
+  assert.deepEqual(report.repository.boundary, {
+    status: "attention",
+    ignoredInstructionCount: 1,
+    ignoredInstructions: [
+      {
+        path: "<parent>/AGENTS.override.md",
+        filename: "AGENTS.override.md",
+        distance: 1,
+      },
+    ],
+    outerMarker: { path: "<parent>", marker: ".project", distance: 1 },
+    warnings: [],
+  });
+  assert.equal(report.signals.attentionCount, 1);
+  const serialized = JSON.stringify(report);
+  assert.equal(serialized.includes(temporary), false);
+  assert.equal(serialized.includes(outer), false);
+});
+
+test("doctor keeps the root-boundary signal clear when the outer project has no instructions", async (context) => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "instructree-doctor-boundary-clear-"));
+  const outer = path.join(temporary, "workspace");
+  const repository = path.join(outer, "module");
+  await writeFiles(outer, {
+    ".git/HEAD": "ref: refs/heads/main\n",
+    "module/.git/HEAD": "ref: refs/heads/main\n",
+    "module/AGENTS.md": "# Inner\n",
+  });
+  context.after(() => fs.rm(temporary, { recursive: true, force: true }));
+
+  const report = await diagnoseCodex(repository, temporary);
+  assert.equal(report.repository.boundary.status, "clear");
+  assert.equal(report.repository.boundary.ignoredInstructionCount, 0);
+  assert.deepEqual(report.repository.boundary.ignoredInstructions, []);
+  assert.deepEqual(report.repository.boundary.outerMarker, { path: "<parent>", marker: ".git", distance: 1 });
+  assert.equal(report.signals.attentionCount, 0);
 });

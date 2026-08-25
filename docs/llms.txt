@@ -2,7 +2,7 @@
 
 > Instructree is a dependency-free CLI, GitHub Action, and Codex skill that maps and lints repository-scoped coding-agent instructions without uploading repository content.
 
-Use Instructree to run a share-safe Codex pre-session doctor; inspect the configured AGENTS.md and AGENTS.override.md project chain; audit Codex user and repository-local skill candidate scopes plus supported user config; and map CLAUDE.md, GitHub Copilot instructions and recursive imports, Agent Skills, custom agents, agentic workflows, Cursor rules, Windsurf rules, and GEMINI.md. The current release is v0.16.0 and requires Node.js 20 or later.
+Use Instructree to run a share-safe Codex pre-session doctor; debug parent AGENTS.md files hidden by nested project-root markers; inspect the configured AGENTS.md and AGENTS.override.md project chain; audit Codex user and repository-local skill candidate scopes plus supported user config; and map CLAUDE.md, GitHub Copilot instructions and recursive imports, Agent Skills, custom agents, agentic workflows, Cursor rules, Windsurf rules, and GEMINI.md. The current release is v0.16.0 and requires Node.js 20 or later.
 
 ## Start here
 
@@ -21,6 +21,7 @@ Use Instructree to run a share-safe Codex pre-session doctor; inspect the config
 ## Try it
 
 - [Codex doctor](https://github.com/kotobuki09/instructree#commands): Run `instructree doctor .` for one redacted report covering supported user project settings, user instructions, the current project chain, and skill state; add `--json` for deterministic structured output.
+- [Codex root-boundary research](https://github.com/kotobuki09/instructree/blob/main/docs/research/codex-root-boundary.md): Explain why a nested `.git` or configured marker can hide parent instructions and how the doctor reports that boundary without exposing local paths.
 - [CLI install and examples](https://github.com/kotobuki09/instructree#try-it): Run the pinned release without an API key or repository upload.
 - [Codex local-scope audit](https://github.com/kotobuki09/instructree#commands): Inspect user and repository-local `.agents/skills` candidates, supported user `skills.config` state, duplicates, metadata, and prompt-list pressure concisely with `instructree skills . --client codex`; add `--all` or `--json` for the full inventory.
 - [GitHub Action](https://github.com/kotobuki09/instructree#ci): Add deterministic instruction linting to pull requests.

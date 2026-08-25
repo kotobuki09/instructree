@@ -4,11 +4,99 @@ import { resolveCodexProjectConfig } from "./codex-config.js";
 import { explain } from "./index.js";
 import { auditCodexSkills, findCodexProjectRoot } from "./skills.js";
 
-const CODEX_AGENTS_SOURCE = "https://github.com/openai/codex/blob/0b94751cc463d02dec397c4c4dbb77fd9b93d94d/codex-rs/core/src/agents_md.rs";
+const CODEX_AGENTS_SOURCE = "https://github.com/openai/codex/blob/4213b38f3c555049bf6f494065698a3dfe587c16/codex-rs/core/src/agents_md.rs";
 const CODEX_SKILLS_SOURCE = "https://developers.openai.com/codex/skills";
 
 function normalize(relativePath) {
   return relativePath.split(path.sep).join("/");
+}
+
+function parentLabel(distance) {
+  return distance === 1 ? "<parent>" : `<parent:${distance}>`;
+}
+
+async function inspectEntry(target) {
+  try {
+    return await fs.lstat(target);
+  } catch (error) {
+    if (["ENOENT", "ENOTDIR"].includes(error.code)) return null;
+    throw error;
+  }
+}
+
+async function inspectRootBoundary(repository, rootMarkers, fallbackFilenames) {
+  const clear = (outerMarker = null, warnings = []) => ({
+    status: "clear",
+    ignoredInstructionCount: 0,
+    ignoredInstructions: [],
+    outerMarker,
+    warnings,
+  });
+  if (!repository.markerFound || rootMarkers.length === 0) return clear();
+
+  const filenames = ["AGENTS.override.md", "AGENTS.md", ...fallbackFilenames]
+    .filter((filename, index, values) => filename && values.indexOf(filename) === index);
+  const possibleInstructions = [];
+  const warnings = [];
+  let current = path.dirname(repository.root);
+  let distance = 1;
+
+  while (true) {
+    const displayDirectory = parentLabel(distance);
+    for (const filename of filenames) {
+      try {
+        const metadata = await fs.stat(path.join(current, filename));
+        if (!metadata.isFile()) continue;
+        possibleInstructions.push({
+          path: `${displayDirectory}/${filename}`,
+          filename,
+          distance,
+        });
+        break;
+      } catch (error) {
+        if (["ENOENT", "ENOTDIR"].includes(error.code)) continue;
+        warnings.push({
+          code: "root-boundary-read-failure",
+          path: `${displayDirectory}/${filename}`,
+          line: 1,
+          message: `could not inspect parent instruction candidate: ${error.code ?? "error"}`,
+        });
+        break;
+      }
+    }
+
+    let outerMarker = null;
+    for (const marker of rootMarkers) {
+      try {
+        if (await inspectEntry(path.join(current, marker))) {
+          outerMarker = { path: displayDirectory, marker, distance };
+          break;
+        }
+      } catch (error) {
+        warnings.push({
+          code: "root-boundary-read-failure",
+          path: `${displayDirectory}/${marker}`,
+          line: 1,
+          message: `could not inspect parent project-root marker: ${error.code ?? "error"}`,
+        });
+      }
+    }
+
+    if (outerMarker) {
+      return {
+        status: possibleInstructions.length > 0 ? "attention" : "clear",
+        ignoredInstructionCount: possibleInstructions.length,
+        ignoredInstructions: possibleInstructions,
+        outerMarker,
+        warnings,
+      };
+    }
+
+    const parent = path.dirname(current);
+    if (parent === current) return clear(null, warnings);
+    current = parent;
+    distance += 1;
+  }
 }
 
 async function userInstructions(home) {
@@ -110,6 +198,9 @@ export async function diagnoseCodex(
   const rootMarkers = usableProjectConfiguration ? projectConfiguration.settings.rootMarkers : [".git"];
   const markerSource = usableProjectConfiguration ? projectConfiguration.sources.rootMarkers : "fallback";
   const repository = await findCodexProjectRoot(absoluteCwd, rootMarkers);
+  const boundary = usableProjectConfiguration
+    ? await inspectRootBoundary(repository, rootMarkers, projectConfiguration.settings.fallbackFilenames)
+    : { status: "unavailable", ignoredInstructionCount: 0, ignoredInstructions: [], outerMarker: null, warnings: [] };
   const skillsAudit = await auditCodexSkills(absoluteCwd, home, {
     projectRootMarkers: rootMarkers,
     projectRootMarkerSource: markerSource,
@@ -149,6 +240,8 @@ export async function diagnoseCodex(
     skills.metadataFailureCount +
     skills.metadataWarningCount +
     skills.scanErrorCount +
+    boundary.ignoredInstructionCount +
+    boundary.warnings.length +
     Number(project.truncated === true);
 
   return {
@@ -161,6 +254,7 @@ export async function diagnoseCodex(
       marker: repository.marker,
       markers: rootMarkers,
       markerSource,
+      boundary,
     },
     configuration: {
       path: "~/.codex/config.toml",

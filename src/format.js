@@ -240,9 +240,26 @@ export function formatDoctor(result) {
     `${bold("instructree doctor")} ${dim("· Codex pre-session setup audit")}`,
     `${dim("repository cwd:")} ${result.repository.currentDirectory}`,
     `${dim("project root:")} <repository> ${dim(`· marker: ${marker}`)}`,
-    "",
-    cyan(`user config · ${result.configuration.path}`),
   ];
+
+  if (result.repository.boundary.status === "attention") {
+    lines.push(yellow(`root boundary: ${result.repository.boundary.ignoredInstructionCount} parent instruction${result.repository.boundary.ignoredInstructionCount === 1 ? "" : "s"} ignored above selected project root`));
+    for (const instruction of result.repository.boundary.ignoredInstructions) {
+      lines.push(yellow(`- ${instruction.path} · ignored above selected project root`));
+    }
+    if (result.repository.boundary.outerMarker) {
+      lines.push(dim(`- outer marker: ${result.repository.boundary.outerMarker.marker} at ${result.repository.boundary.outerMarker.path}`));
+    }
+  } else if (result.repository.boundary.status === "clear") {
+    lines.push(dim("root boundary: clear · no parent instructions hidden by an outer project marker"));
+  } else {
+    lines.push(dim("root boundary: unavailable · project configuration could not be resolved"));
+  }
+  for (const warning of result.repository.boundary.warnings) {
+    lines.push(red(`- ${warning.path}:${warning.line} · ${warning.message}`));
+  }
+
+  lines.push("", cyan(`user config · ${result.configuration.path}`));
 
   if (["parsed", "missing"].includes(projectConfiguration.status)) {
     const fallbacks = projectConfiguration.settings.fallbackFilenames.length > 0
