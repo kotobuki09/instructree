@@ -11,7 +11,7 @@
 
   <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="18">
     <text x="34" y="92" fill="#7ee787">$</text>
-    <text x="56" y="92" fill="#f0f6fc">npx instructree imports</text>
+    <text x="56" y="92" fill="#f0f6fc">npx --yes github:kotobuki09/instructree imports</text>
 
     <text x="34" y="132" fill="#f0f6fc" font-weight="700">instructree imports</text>
     <text x="246" y="132" fill="#8b949e">· GitHub Copilot CLI · /home/me/acme-app</text>
