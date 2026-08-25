@@ -309,19 +309,30 @@ export async function auditCodexSkills(cwd = process.cwd(), home = process.env.H
     .sort((left, right) => left.path.localeCompare(right.path) || left.code.localeCompare(right.code));
   const duplicates = duplicateReports(allSkills);
   const estimates = allSkills.map(listingEstimate);
+  const estimateTotals = estimates.reduce(
+    (totals, estimate) => {
+      totals.initialList += estimate.totalChars;
+      totals.names += estimate.nameChars;
+      totals.descriptions += estimate.descriptionChars;
+      totals.paths += estimate.pathChars;
+      totals.separators += estimate.separatorChars;
+      return totals;
+    },
+    { initialList: 0, names: 0, descriptions: 0, paths: 0, separators: 0 },
+  );
   const pressure = {
-    estimatedInitialListChars: estimates.reduce((total, estimate) => total + estimate.totalChars, 0),
-    estimatedNameChars: estimates.reduce((total, estimate) => total + estimate.nameChars, 0),
-    estimatedDescriptionChars: estimates.reduce((total, estimate) => total + estimate.descriptionChars, 0),
-    estimatedPathChars: estimates.reduce((total, estimate) => total + estimate.pathChars, 0),
-    separatorChars: estimates.reduce((total, estimate) => total + estimate.separatorChars, 0),
+    estimatedInitialListChars: estimateTotals.initialList,
+    estimatedNameChars: estimateTotals.names,
+    estimatedDescriptionChars: estimateTotals.descriptions,
+    estimatedPathChars: estimateTotals.paths,
+    separatorChars: estimateTotals.separators,
     unknownContextWindowReferenceChars: CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS,
     remainingAgainstUnknownContextWindowReferenceChars: Math.max(
       0,
-      CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS - estimates.reduce((total, estimate) => total + estimate.totalChars, 0),
+      CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS - estimateTotals.initialList,
     ),
     status:
-      estimates.reduce((total, estimate) => total + estimate.totalChars, 0) > CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS
+      estimateTotals.initialList > CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS
         ? "exceeds-unknown-window-reference"
         : "within-unknown-window-reference",
     note: "Approximate only: Codex uses at most 2% of the model context, or 8,000 characters when the context window is unknown; logical redacted paths may differ from runtime paths.",

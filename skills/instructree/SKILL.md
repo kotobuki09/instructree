@@ -28,7 +28,7 @@ Choose the narrowest command that answers the request:
 - Add repeatable `--fallback <filename>` values and `--max-bytes <n>` when the Codex project configuration uses non-default fallbacks or byte limits.
 - `instructree explain <file> --root . --effective` includes recursive Copilot CLI imports.
 - `instructree imports . --json` audits the recursive `@path` graph.
-- `instructree skills . --client codex --json` inventories Codex user and repository-local skill candidate scopes without installing or uploading anything. Omit `--client codex` because `skills` is Codex-specific; use optional `--home <home>` only to inspect a different user scope.
+- `instructree skills . --client codex --json` inventories Codex user and repository-local skill candidate scopes without installing or uploading anything. The `--client codex` flag may be omitted because `skills` is Codex-specific; use optional `--home <home>` only to inspect a different user scope.
 - `instructree scan . --sarif` emits SARIF 2.1.0 for code-scanning integrations.
 - Add `--strict` only when warnings should fail the check.
 
