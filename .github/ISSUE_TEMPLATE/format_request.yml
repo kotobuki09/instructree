@@ -1,0 +1,26 @@
+name: Instruction format request
+description: Propose support for another coding-agent instruction format.
+title: "format: "
+labels: [enhancement, format]
+body:
+  - type: input
+    id: format
+    attributes:
+      label: Format and official documentation
+      placeholder: "Format name — https://official.example/docs"
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Minimal example
+      description: Show the file path and smallest valid content.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Discovery and precedence behavior
+      description: Describe what is documented versus inferred.
+    validations:
+      required: true

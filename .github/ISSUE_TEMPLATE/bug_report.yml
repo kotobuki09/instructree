@@ -1,0 +1,32 @@
+name: Bug report
+description: Report an incorrect diagnostic, crash, or discovery problem.
+title: "bug: "
+labels: [bug]
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include the smallest instruction file and command that reproduce the problem. Remove secrets first.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Instructree and Node.js versions
+      placeholder: "instructree 0.1.0, Node.js 22.18.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [Linux, macOS, Windows, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Actual and expected output
+    validations:
+      required: true

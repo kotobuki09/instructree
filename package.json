@@ -1,0 +1,45 @@
+{
+  "name": "instructree",
+  "version": "0.1.0",
+  "description": "Map and lint the instructions your AI coding agents will actually use.",
+  "type": "module",
+  "bin": {
+    "instructree": "bin/instructree.js"
+  },
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check bin/instructree.js && node --check src/cli.js && node --check src/index.js",
+    "prepublishOnly": "npm test && npm run check"
+  },
+  "keywords": [
+    "agents-md",
+    "claude-md",
+    "copilot-instructions",
+    "agent-skills",
+    "coding-agents",
+    "linter",
+    "cli"
+  ],
+  "author": "kotobuki09",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kotobuki09/instructree.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kotobuki09/instructree/issues"
+  },
+  "homepage": "https://github.com/kotobuki09/instructree#readme"
+}
