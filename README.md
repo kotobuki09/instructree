@@ -22,31 +22,31 @@ Coding agents now read instructions from several files with different scopes. On
 No install or API key:
 
 ```bash
-npx --yes github:kotobuki09/instructree
+npx --yes github:kotobuki09/instructree#v0.8.0
 ```
 
 Add the same audit to every pull request without copying workflow YAML:
 
 ```bash
-npx --yes github:kotobuki09/instructree init
+npx --yes github:kotobuki09/instructree#v0.8.0 init
 ```
 
 Send findings to GitHub code scanning with one command:
 
 ```bash
-npx --yes github:kotobuki09/instructree init --code-scanning
+npx --yes github:kotobuki09/instructree#v0.8.0 init --code-scanning
 ```
 
 Ask what may apply to one file:
 
 ```bash
-npx --yes github:kotobuki09/instructree explain src/api/client.ts --effective
+npx --yes github:kotobuki09/instructree#v0.8.0 explain src/api/client.ts --effective
 ```
 
 Install from GitHub if you want the command everywhere:
 
 ```bash
-npm install --global github:kotobuki09/instructree
+npm install --global github:kotobuki09/instructree#v0.8.0
 instructree
 ```
 
