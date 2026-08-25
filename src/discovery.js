@@ -14,6 +14,7 @@ const DEFAULT_IGNORED_DIRECTORIES = new Set([
   "target",
   "vendor",
 ]);
+const SKILL_RESOURCE_DIRECTORIES = new Set(["assets", "references", "scripts"]);
 
 function normalize(relativePath) {
   return relativePath.split(path.sep).join("/");
@@ -92,7 +93,8 @@ export function classify(relativePath) {
   }
   if (
     basename === "SKILL.md" &&
-    ["skills/", ".agents/skills/", ".claude/skills/", ".github/skills/"].some((prefix) => lower.startsWith(prefix))
+    (normalized.split("/").length === 2 ||
+      ["skills/", ".agents/skills/", ".claude/skills/", ".github/skills/"].some((prefix) => lower.startsWith(prefix)))
   ) {
     return { family: "Skills", kind: "skill", scope: directory, patternKey: null };
   }
@@ -109,11 +111,15 @@ export async function discover(root) {
   async function walk(directory, relativeDirectory = "") {
     const entries = await fs.readdir(directory, { withFileTypes: true });
     entries.sort((left, right) => left.name.localeCompare(right.name));
+    const skillPath = relativeDirectory ? `${normalize(relativeDirectory)}/SKILL.md` : "SKILL.md";
+    const isSkillDirectory =
+      entries.some((entry) => entry.isFile() && entry.name === "SKILL.md") && classify(skillPath)?.kind === "skill";
 
     for (const entry of entries) {
       const relativePath = relativeDirectory ? path.join(relativeDirectory, entry.name) : entry.name;
       if (entry.isDirectory()) {
         if (DEFAULT_IGNORED_DIRECTORIES.has(entry.name)) continue;
+        if (isSkillDirectory && SKILL_RESOURCE_DIRECTORIES.has(entry.name.toLowerCase())) continue;
         if (isIgnored(relativePath, true, ignoreRules)) continue;
         await walk(path.join(directory, entry.name), relativePath);
         continue;

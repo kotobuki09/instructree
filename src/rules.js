@@ -6,6 +6,12 @@ function diagnostic(file, severity, code, line, message) {
   return { file: file.path, severity, code, line, message };
 }
 
+function isNestedCatalogSkill(filePath) {
+  const segments = filePath.split("/");
+  if (segments[0] === "skills") return segments.length > 3;
+  return [".agents", ".claude", ".github"].includes(segments[0]) && segments[1] === "skills" && segments.length > 4;
+}
+
 function validateFrontmatter(file, parsed) {
   const diagnostics = parsed.errors.map((error) =>
     diagnostic(file, "error", "E001", error.line, error.message),
@@ -50,7 +56,8 @@ function validateFrontmatter(file, parsed) {
         diagnostic(file, "error", "E004", parsed.keyLines.name ?? 1, "skill name must use lower-case kebab-case"),
       );
     }
-    if (name !== folderName) {
+    const namespacedNestedName = isNestedCatalogSkill(file.path) && name.endsWith(`-${folderName}`);
+    if (name !== folderName && !namespacedNestedName) {
       diagnostics.push(
         diagnostic(
           file,
@@ -66,14 +73,31 @@ function validateFrontmatter(file, parsed) {
   return diagnostics;
 }
 
+function unfencedLines(content) {
+  const visible = [];
+  let fence = null;
+  for (const [index, text] of content.replace(/\r\n/g, "\n").split("\n").entries()) {
+    const match = text.match(/^\s*(`{3,}|~{3,})/);
+    if (match) {
+      const marker = match[1][0];
+      if (!fence) fence = { marker, length: match[1].length };
+      else if (fence.marker === marker && match[1].length >= fence.length) fence = null;
+      continue;
+    }
+    if (!fence) visible.push({ text, line: index + 1 });
+  }
+  return visible;
+}
+
 function localMarkdownLinks(content) {
   const links = [];
-  const expression = /\[[^\]]*\]\(([^)]+)\)/g;
-  for (const match of content.matchAll(expression)) {
-    const destination = match[1].trim().replace(/^<|>$/g, "").split(/\s+["']/)[0];
-    if (!destination || /^(?:[a-z]+:|#)/i.test(destination)) continue;
-    const before = content.slice(0, match.index);
-    links.push({ destination: destination.split("#")[0], line: before.split(/\r?\n/).length });
+  for (const source of unfencedLines(content)) {
+    const prose = source.text.replace(/(`+).*?\1/g, "");
+    for (const match of prose.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
+      const destination = match[1].trim().replace(/^<|>$/g, "").split(/\s+["']/)[0];
+      if (!destination || /^(?:[a-z]+:|#)/i.test(destination)) continue;
+      links.push({ destination: destination.split("#")[0], line: source.line });
+    }
   }
   return links;
 }
@@ -99,11 +123,14 @@ async function validateLinks(file, content) {
 }
 
 function directiveFromLine(rawLine, line) {
-  const text = rawLine
+  const firstClause = rawLine
     .replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+)/, "")
+    .split(/;\s*|\.\s+/)[0]
+    .split(/[:(]\s*(?=(?:you\s+)?(?:must\s+not|do\s+not|don't|never|avoid|must|always|use|prefer|required?:?))/i)[0];
+  const text = firstClause
     .replace(/[`*_]/g, "")
     .trim();
-  if (text.length < 8 || text.startsWith("#")) return null;
+  if (text.length < 8 || text.startsWith("#") || text.endsWith(":")) return null;
 
   const negative = text.match(/^(?:you\s+)?(?:must\s+not|do\s+not|don't|never|avoid)\s+(?:use\s+)?(.+?)[.!]?$/i);
   const positive = text.match(/^(?:you\s+)?(?:must|always|use|prefer|required?:?)\s+(?:use\s+)?(.+?)[.!]?$/i);
@@ -114,15 +141,14 @@ function directiveFromLine(rawLine, line) {
     .toLowerCase()
     .replace(/[^a-z0-9@/._+-]+/g, " ")
     .split(/\s+/)
-    .filter((token) => token.length > 2 && !["the", "and", "for", "with", "that", "this"].includes(token));
+    .filter((token) => token.length > 2 && !["the", "and", "for", "new", "with", "that", "this"].includes(token));
   if (tokens.length === 0) return null;
   return { polarity: negative ? "negative" : "positive", tokens: new Set(tokens), line, text };
 }
 
 function directives(file) {
-  return file.content
-    .split(/\r?\n/)
-    .map((line, index) => directiveFromLine(line, index + 1))
+  return unfencedLines(file.content)
+    .map(({ text, line }) => directiveFromLine(text, line))
     .filter(Boolean);
 }
 
@@ -131,9 +157,33 @@ function similarity(left, right) {
   return shared / Math.min(left.size, right.size);
 }
 
+function constrainedExtensions(pattern) {
+  const match = pattern.replace(/\s/g, "").match(/\.([a-z0-9]+|\{[a-z0-9,]+\})$/i);
+  if (!match) return null;
+  return new Set(match[1].replace(/^\{|\}$/g, "").split(","));
+}
+
+function patternsMayOverlap(leftPatterns, rightPatterns) {
+  if (leftPatterns.length === 0 || rightPatterns.length === 0) return false;
+  return leftPatterns.some((left) =>
+    rightPatterns.some((right) => {
+      const leftExtensions = constrainedExtensions(left);
+      const rightExtensions = constrainedExtensions(right);
+      if (!leftExtensions || !rightExtensions) return true;
+      return [...leftExtensions].some((extension) => rightExtensions.has(extension));
+    }),
+  );
+}
+
 function scopesCanOverlap(left, right) {
   if (left.kind === "skill" || right.kind === "skill" || left.kind === "agent" || right.kind === "agent") return false;
   if (left.kind === "workflow" || right.kind === "workflow") return false;
+  if (left.kind === "scoped" && right.kind === "scoped") {
+    return patternsMayOverlap(left.patterns, right.patterns);
+  }
+  if ((left.kind === "scoped" && left.patterns.length === 0) || (right.kind === "scoped" && right.patterns.length === 0)) {
+    return false;
+  }
   if (left.kind === "always" && right.kind === "always") {
     return (
       left.scope === "." ||

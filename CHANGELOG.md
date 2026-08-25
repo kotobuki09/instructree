@@ -2,6 +2,15 @@
 
 All notable changes to Instructree are documented here.
 
+## 0.5.0 — 2026-08-26
+
+- Discover direct-child and nested skills in standalone catalogs.
+- Ignore fenced and inline examples, plus skill resource templates, during active-instruction analysis.
+- Skip scoped conflict comparisons when file extensions prove their path globs disjoint.
+- Avoid conflict noise from directive headings and aligned alternatives in compound rules.
+- Accept namespaced skill names in nested catalogs while retaining ordinary folder-name warnings.
+- Add a pinned, reproducible real-world compatibility report.
+
 ## 0.4.0 — 2026-08-26
 
 - Add a dependency-free GitHub Action with native file-and-line annotations.
