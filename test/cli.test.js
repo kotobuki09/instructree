@@ -27,7 +27,7 @@ test("init creates a GitHub Actions workflow without overwriting it", async (con
   assert.equal(exitCode, 0);
   assert.equal(output[0], "created .github/workflows/instructree.yml");
   assert.match(workflow, /^name: instruction-lint$/m);
-  assert.match(workflow, /uses: kotobuki09\/instructree@v0\.7\.0/);
+  assert.match(workflow, /uses: kotobuki09\/instructree@v0\.7\.1/);
   assert.match(workflow, /strict: true/);
 
   await fs.writeFile(workflowPath, "# keep me\n");

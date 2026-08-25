@@ -1,6 +1,12 @@
 # Codex setup
 
-Instructree ships as both a CLI and an agent skill. Install the skill globally for Codex:
+Instructree ships as both a CLI and an agent skill. With GitHub CLI 2.90 or later, install the versioned skill at user scope for Codex:
+
+```bash
+gh skill install kotobuki09/instructree instructree@v0.7.1 --agent codex --scope user
+```
+
+Alternatively, use the cross-agent installer:
 
 ```bash
 npx skills add kotobuki09/instructree --skill instructree -g --agent codex

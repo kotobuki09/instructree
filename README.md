@@ -44,11 +44,13 @@ npm install --global github:kotobuki09/instructree
 instructree
 ```
 
-Install the native skill for Codex and other compatible agents:
+Install the native skill for Codex with GitHub CLI 2.90 or later:
 
 ```bash
-npx skills add kotobuki09/instructree --skill instructree -g --agent codex
+gh skill install kotobuki09/instructree instructree@v0.7.1 --agent codex --scope user
 ```
+
+Or use the cross-agent `skills` installer: `npx skills add kotobuki09/instructree --skill instructree -g --agent codex`.
 
 Then ask: `Use $instructree to audit the agent instructions in this repository.` See the focused [Codex setup](docs/codex-setup.md) for the companion engineering and launch skills used to develop this project.
 
@@ -151,7 +153,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: kotobuki09/instructree@v0.7.0
+      - uses: kotobuki09/instructree@v0.7.1
         with:
           strict: true
 ```

@@ -2,6 +2,13 @@
 
 All notable changes to Instructree are documented here.
 
+## 0.7.1 — 2026-08-26
+
+- Publish Instructree diagnostics to GitHub code scanning through a first-party SARIF workflow.
+- Add MIT license metadata and an immutable executable fallback to the native Agent Skill.
+- Protect published `v*` tags from updates and deletion.
+- Document the first-party `gh skill install` path for Codex.
+
 ## 0.7.0 — 2026-08-26
 
 - Add `instructree init [root]` to scaffold a pinned, read-only GitHub Actions workflow.
