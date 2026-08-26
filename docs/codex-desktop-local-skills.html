@@ -49,7 +49,7 @@
             <li><div><h3>Run from the intended repository root</h3><p>Run the audit in the same checkout opened by Codex Desktop. It reports every candidate <code>.agents/skills</code> scope from the current directory to the repository root, using repository-relative paths.</p></div></li>
             <li><div><h3>Resolve structural findings on disk</h3><p>Check metadata failures, BOM warnings, malformed frontmatter, scan errors, and possible duplicate names. A valid local candidate is necessary evidence, but not proof that a running Desktop session loaded it.</p></div></li>
             <li><div><h3>Keep repository skills repository-scoped</h3><p>Do not copy the skill into <code>~/.agents/skills</code> as a workaround. That changes the scope under test and can expose project-specific instructions to unrelated repositories.</p></div></li>
-            <li><div><h3>Collect the native result separately</h3><p>After correcting local findings, start a new Desktop session for that checkout and compare the native available-skills list with the audit. Record the Desktop version, operating system, project trust state, and exact count of valid local candidates.</p></div></li>
+            <li><div><h3>Collect the native result separately</h3><p>After correcting local findings, start a new Desktop session for that checkout and compare the native available-skills list with the audit. Do not use a resumed thread as the post-change check: current Codex reports show its model-visible skill list can remain stale after new skills are added. Record the Desktop version, operating system, project trust state, and exact count of valid local candidates.</p></div></li>
           </ol>
         </section>
         <section class="guide-section" aria-labelledby="output-title">
@@ -71,6 +71,7 @@ possible duplicate names: 0</code></pre>
           <ul class="source-list">
             <li><a href="https://developers.openai.com/codex/skills">Official Codex skills documentation</a> — user and repository skill locations.</li>
             <li><a href="https://github.com/openai/codex/issues/40458">openai/codex#40458</a> — Windows Desktop report of valid repository-local <code>.agents/skills</code> candidates absent from the native list.</li>
+            <li><a href="https://github.com/openai/codex/issues/16607">openai/codex#16607</a> — report that resumed threads can retain a stale model-visible skill inventory after a skill is added.</li>
             <li><a href="https://github.com/kotobuki09/instructree/blob/main/docs/research/codex-user-skill-roots.md">Instructree user-root research</a> — why shared and deprecated user roots are reported separately.</li>
           </ul>
         </section>
