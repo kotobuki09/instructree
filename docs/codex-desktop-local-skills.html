@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Codex Desktop cannot find repository-local skills | Instructree</title>
+    <meta name="description" content="Audit a repository-local .agents/skills catalog before diagnosing a Codex Desktop skill-discovery failure on Windows, without moving project skills into a global user scope.">
+    <link rel="canonical" href="https://kotobuki09.github.io/instructree/codex-desktop-local-skills.html">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Codex Desktop cannot find repository-local skills">
+    <meta property="og:description" content="A source-grounded, read-only workflow for checking repository-local .agents/skills before escalating a Codex Desktop discovery failure.">
+    <meta property="og:url" content="https://kotobuki09.github.io/instructree/codex-desktop-local-skills.html">
+    <meta property="og:image" content="https://raw.githubusercontent.com/kotobuki09/instructree/main/assets/social-preview.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Codex Desktop missing repository-local skills">
+    <meta name="twitter:description" content="Check the on-disk local skill catalog without copying project skills into a global user scope.">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="site.css">
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@graph":[
+        {"@type":"TechArticle","headline":"Codex Desktop cannot find repository-local skills","description":"A source-grounded workflow for auditing a repository-local .agents/skills catalog before diagnosing a Codex Desktop discovery failure.","datePublished":"2026-08-26","dateModified":"2026-08-26","mainEntityOfPage":"https://kotobuki09.github.io/instructree/codex-desktop-local-skills.html","url":"https://kotobuki09.github.io/instructree/codex-desktop-local-skills.html","isPartOf":{"@type":"WebSite","name":"Instructree","url":"https://kotobuki09.github.io/instructree/"}},
+        {"@type":"FAQPage","mainEntity":[
+          {"@type":"Question","name":"Can Instructree prove that Codex Desktop loaded a repository skill?","acceptedAnswer":{"@type":"Answer","text":"No. Instructree statically audits on-disk candidates and supported user configuration. Product restrictions, session state, trust, plugins, and the native Desktop skill list remain runtime evidence outside that audit."}},
+          {"@type":"Question","name":"Should repository-specific skills be copied into the user skill directory?","acceptedAnswer":{"@type":"Answer","text":"Not as a diagnostic shortcut. Copying can make project-specific instructions globally available to unrelated repositories and changes the scope being tested."}}
+        ]}
+      ]}
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Instructree home"><span class="brand-mark" aria-hidden="true">⌁</span><span>Instructree</span></a>
+      <nav aria-label="Primary navigation"><a href="#workflow">Workflow</a><a href="#evidence">Evidence</a><a class="nav-cta" href="https://github.com/kotobuki09/instructree">View on GitHub</a></nav>
+    </header>
+    <main class="guide">
+      <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Instructree</a><span aria-hidden="true">/</span><span>Codex Desktop local skills</span></nav>
+      <article>
+        <header class="guide-hero">
+          <p class="eyebrow"><span></span> Codex Desktop troubleshooting</p>
+          <h1>Your repository skill exists, but Codex Desktop cannot see it.</h1>
+          <p class="guide-lede">First establish the share-safe disk and configuration evidence. Do not move a project skill into a global user directory merely to make a missing native skill entry disappear.</p>
+          <div class="guide-command" aria-label="Audit repository-local Codex skills"><span class="prompt" aria-hidden="true">$</span><code>npx --yes github:kotobuki09/instructree#v0.20.0 skills . --client codex</code></div>
+          <p class="guide-note">Read-only local audit · logical paths · no model call · does not claim live Desktop state</p>
+        </header>
+        <section class="guide-section" id="workflow" aria-labelledby="workflow-title">
+          <div class="section-kicker">Before changing scope</div>
+          <h2 id="workflow-title">Separate a local catalog defect from a Desktop runtime defect.</h2>
+          <ol class="step-list">
+            <li><div><h3>Run from the intended repository root</h3><p>Run the audit in the same checkout opened by Codex Desktop. It reports every candidate <code>.agents/skills</code> scope from the current directory to the repository root, using repository-relative paths.</p></div></li>
+            <li><div><h3>Resolve structural findings on disk</h3><p>Check metadata failures, BOM warnings, malformed frontmatter, scan errors, and possible duplicate names. A valid local candidate is necessary evidence, but not proof that a running Desktop session loaded it.</p></div></li>
+            <li><div><h3>Keep repository skills repository-scoped</h3><p>Do not copy the skill into <code>~/.agents/skills</code> as a workaround. That changes the scope under test and can expose project-specific instructions to unrelated repositories.</p></div></li>
+            <li><div><h3>Collect the native result separately</h3><p>After correcting local findings, start a new Desktop session for that checkout and compare the native available-skills list with the audit. Record the Desktop version, operating system, project trust state, and exact count of valid local candidates.</p></div></li>
+          </ol>
+        </section>
+        <section class="guide-section" aria-labelledby="output-title">
+          <div class="section-kicker">What a useful report contains</div>
+          <h2 id="output-title">Capture deterministic local evidence without dumping private paths.</h2>
+          <pre><code>$ instructree skills . --client codex --json
+
+scopes: user shared · user legacy · repository local
+repository candidates: 7
+metadata failures: 0
+scan errors: 0
+possible duplicate names: 0</code></pre>
+          <p>Use the JSON result to preserve logical paths, scope provenance, supported user-config state, and diagnostics. Pair it with the separate native observation: expected local candidates versus skills shown by the Desktop app.</p>
+          <div class="callout"><strong>Static audit boundary</strong><p>Instructree does not inspect a running or resumed session. Desktop trust, product restrictions, plugins, native discovery, and session state can change the loaded list after the on-disk audit succeeds.</p></div>
+        </section>
+        <section class="guide-section" id="evidence" aria-labelledby="evidence-title">
+          <div class="section-kicker">Primary evidence</div>
+          <h2 id="evidence-title">The local scope is documented; native visibility still needs runtime proof.</h2>
+          <ul class="source-list">
+            <li><a href="https://developers.openai.com/codex/skills">Official Codex skills documentation</a> — user and repository skill locations.</li>
+            <li><a href="https://github.com/openai/codex/issues/40458">openai/codex#40458</a> — Windows Desktop report of valid repository-local <code>.agents/skills</code> candidates absent from the native list.</li>
+            <li><a href="https://github.com/kotobuki09/instructree/blob/main/docs/research/codex-user-skill-roots.md">Instructree user-root research</a> — why shared and deprecated user roots are reported separately.</li>
+          </ul>
+        </section>
+        <section class="guide-section guide-cta" aria-labelledby="next-title">
+          <div class="section-kicker">Next step</div><h2 id="next-title">Audit the local catalog, then compare it with a fresh Desktop session.</h2>
+          <p>Use the read-only result to correct disk or supported-configuration defects. If the catalog is clean but the native list is still missing repository candidates, keep the two evidence layers separate when escalating.</p>
+          <div class="hero-actions"><a class="button primary" href="https://github.com/kotobuki09/instructree">Get Instructree <span aria-hidden="true">→</span></a><a class="button secondary" href="codex-skill-overload.html">Check skill overload</a></div>
+        </section>
+      </article>
+    </main>
+    <footer><span>Instructree · MIT licensed</span><span>Local static analysis. No model calls. No telemetry.</span></footer>
+  </body>
+</html>

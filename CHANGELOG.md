@@ -4,6 +4,8 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+- Add a source-grounded Codex Desktop repository-local skill troubleshooting guide that keeps static catalog evidence separate from native runtime visibility.
+
 ## 0.20.0 — 2026-08-26
 
 - Rank the largest enabled contributors to Codex's bounded skill catalog using the current per-description cap, and add a source-grounded skill-overload guide.

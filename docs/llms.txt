@@ -9,6 +9,7 @@ Use Instructree to run a share-safe Codex pre-session doctor; audit a focused co
 - [Project site](https://kotobuki09.github.io/instructree/): Product overview, example output, and verification evidence.
 - [Debug Codex AGENTS.md](https://kotobuki09.github.io/instructree/codex-agents-md-debugger.html): Source-grounded troubleshooting for nested project roots, override precedence, byte limits, user instructions, and disabled skills.
 - [Fix Codex skill overload](https://kotobuki09.github.io/instructree/codex-skill-overload.html): Find the largest enabled skill-list contributors, review duplicates, and check a focused starter stack against the bounded model-visible catalog.
+- [Troubleshoot missing Codex Desktop local skills](https://kotobuki09.github.io/instructree/codex-desktop-local-skills.html): Audit valid repository-local `.agents/skills` candidates before comparing them with a fresh native Desktop session; the guide keeps static disk evidence separate from runtime visibility.
 - [Repository](https://github.com/kotobuki09/instructree): Source code, README, issue tracker, and contribution guide.
 - [Codex setup](https://github.com/kotobuki09/instructree/blob/main/docs/codex-setup.md): Install the native Codex skill and use the focused companion stack.
 - [Release v0.20.0](https://github.com/kotobuki09/instructree/releases/tag/v0.20.0): Current release notes and verified package assets.
