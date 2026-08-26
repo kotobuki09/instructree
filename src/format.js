@@ -198,6 +198,15 @@ export function formatSkills(result, { showAll = false } = {}) {
     `duplicate names: ${result.signals.duplicateCount} · metadata failures: ${result.signals.metadataFailureCount} · metadata warnings: ${result.signals.metadataWarningCount} · scan errors: ${result.signals.scanErrorCount}`,
     `skill-list estimate: ${result.pressure.status} · ${result.pressure.estimatedInitialListChars}/${result.pressure.unknownContextWindowReferenceChars} chars`,
   );
+  const contributors = result.pressure.topConfiguredContributors;
+  if (contributors.length > 0) {
+    lines.push("", cyan(`largest configured contributors · top ${contributors.length} of ${result.pressure.configuredCandidateCount}`));
+    contributors.forEach((contributor) => {
+      const capped = contributor.descriptionTruncated ? " · description capped for estimate" : "";
+      lines.push(`- ${contributor.name} · ${contributor.totalChars} chars${capped} · ${contributor.path}`);
+    });
+    lines.push(dim("Approximate fallback-character cost; inspect relevance before changing user configuration."));
+  }
   if (result.duplicates.length > 0) {
     lines.push("", yellow("possible duplicate skill names"));
     result.duplicates.forEach((duplicate) => lines.push(`- ${duplicate.name} · ${duplicate.occurrences.map((item) => `${item.path}:${item.line ?? "?"}`).join(", ")}`));

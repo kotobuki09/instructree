@@ -5,8 +5,12 @@ import { CODEX_SKILL_UTF8_BOM_MESSAGE, parseFrontmatter } from "./frontmatter.js
 
 const CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS = 8000;
 const CODEX_MAX_SCAN_DEPTH = 6;
+const CODEX_MAX_CATALOG_DESCRIPTION_CHARS = 1024;
+const CODEX_CATALOG_DESCRIPTION_SUFFIX = "...";
+const TOP_PRESSURE_CONTRIBUTOR_LIMIT = 5;
 const CODEX_SKILLS_SOURCE = "https://developers.openai.com/codex/skills";
 const CODEX_SKILLS_IMPLEMENTATION_SOURCE = "https://github.com/openai/codex/blob/75cb7c903d474b6637a6e9fe6f76cedf76ef1472/codex-rs/ext/skills/src/host_roots.rs#L80-L112";
+const CODEX_SKILLS_RENDER_SOURCE = "https://github.com/openai/codex/blob/9b4a0f8a0a60349ecfcc3c32d1dd050ce2efc253/codex-rs/ext/skills/src/render.rs";
 
 function normalize(relativePath) {
   return relativePath.split(path.sep).join("/");
@@ -263,18 +267,53 @@ async function discoverScope(scope, seenCanonicalSkillTargets) {
   return { exists, isDirectory, skills, errors };
 }
 
+function cappedCatalogDescription(description) {
+  const characters = Array.from(description ?? "");
+  if (characters.length <= CODEX_MAX_CATALOG_DESCRIPTION_CHARS) {
+    return { text: characters.join(""), chars: characters.length, truncated: false };
+  }
+  const suffixChars = Array.from(CODEX_CATALOG_DESCRIPTION_SUFFIX).length;
+  const prefix = characters.slice(0, CODEX_MAX_CATALOG_DESCRIPTION_CHARS - suffixChars).join("");
+  return {
+    text: `${prefix}${CODEX_CATALOG_DESCRIPTION_SUFFIX}`,
+    chars: CODEX_MAX_CATALOG_DESCRIPTION_CHARS,
+    truncated: true,
+  };
+}
+
 function listingEstimate(skill) {
-  const nameChars = Array.from(skill.name ?? "(unnamed)").length;
-  const descriptionChars = Array.from(skill.description ?? "").length;
+  const name = skill.name ?? "(unnamed)";
+  const description = cappedCatalogDescription(skill.description ?? "");
+  const line = description.text
+    ? `- ${name}: ${description.text} (file: ${skill.path})\n`
+    : `- ${name}: (file: ${skill.path})\n`;
+  const nameChars = Array.from(name).length;
+  const descriptionChars = description.chars;
   const pathChars = Array.from(skill.path).length;
-  const separatorChars = 3;
+  const totalChars = Array.from(line).length;
+  const separatorChars = totalChars - nameChars - descriptionChars - pathChars;
   return {
     nameChars,
     descriptionChars,
     pathChars,
     separatorChars,
-    totalChars: nameChars + descriptionChars + pathChars + separatorChars,
+    totalChars,
+    descriptionTruncated: description.truncated,
   };
+}
+
+function topPressureContributors(skills) {
+  return skills
+    .map((skill) => ({ skill, estimate: listingEstimate(skill) }))
+    .sort((left, right) => right.estimate.totalChars - left.estimate.totalChars || left.skill.path.localeCompare(right.skill.path))
+    .slice(0, TOP_PRESSURE_CONTRIBUTOR_LIMIT)
+    .map(({ skill, estimate }) => ({
+      name: skill.name ?? "(unnamed)",
+      path: skill.path,
+      totalChars: estimate.totalChars,
+      descriptionChars: estimate.descriptionChars,
+      descriptionTruncated: estimate.descriptionTruncated,
+    }));
 }
 
 function duplicateReports(skills) {
@@ -453,7 +492,10 @@ export async function auditCodexSkills(
         : configuredInitialList > CODEX_UNKNOWN_CONTEXT_WINDOW_REFERENCE_CHARS
           ? "exceeds-unknown-window-reference"
           : "within-unknown-window-reference",
-    note: "Approximate only: Codex uses at most 2% of the model context, or 8,000 characters when the context window is unknown; the configured estimate reflects supported user config only, and logical redacted paths may differ from runtime paths.",
+    topConfiguredContributors: topPressureContributors(configuredSkills),
+    topContributorLimit: TOP_PRESSURE_CONTRIBUTOR_LIMIT,
+    estimateModel: "Codex's 8,000-character unknown-context fallback with a 1,024-character per-skill description cap and logical redacted paths; runtime path aliasing and tokenization are not modeled.",
+    note: "Approximate only: Codex normally budgets at most 2% of the model context and may use tokens or path aliases; the configured estimate reflects supported user config only.",
   };
 
   return {
@@ -488,6 +530,7 @@ export async function auditCodexSkills(
     provenance: {
       source: CODEX_SKILLS_SOURCE,
       implementationSource: CODEX_SKILLS_IMPLEMENTATION_SOURCE,
+      renderSource: CODEX_SKILLS_RENDER_SOURCE,
       scopeModel: "user ~/.agents/skills, deprecated user ~/.codex/skills, plus .agents/skills from the current directory to the repository root",
       limitations: [
         "Does not include Codex admin or system skills.",

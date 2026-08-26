@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fix Codex skill overload and context-budget truncation | Instructree</title>
+    <meta name="description" content="Diagnose Codex skill overload, find the largest enabled skill-list contributors, detect duplicates, and build a focused Codex skill stack without uploading local files.">
+    <link rel="canonical" href="https://kotobuki09.github.io/instructree/codex-skill-overload.html">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Fix Codex skill overload and context-budget truncation">
+    <meta property="og:description" content="A source-grounded workflow for auditing Codex skill-list pressure, duplicate skills, and an overloaded user catalog.">
+    <meta property="og:url" content="https://kotobuki09.github.io/instructree/codex-skill-overload.html">
+    <meta property="og:image" content="https://raw.githubusercontent.com/kotobuki09/instructree/main/assets/social-preview.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Fix Codex skill overload">
+    <meta name="twitter:description" content="Find the enabled skills that dominate Codex's bounded model-visible catalog before changing configuration.">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="site.css">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "TechArticle",
+            "headline": "Fix Codex skill overload and context-budget truncation",
+            "description": "A source-grounded workflow for measuring Codex skill-list pressure, finding its largest enabled contributors, and selecting a focused engineering stack.",
+            "datePublished": "2026-08-26",
+            "dateModified": "2026-08-26",
+            "mainEntityOfPage": "https://kotobuki09.github.io/instructree/codex-skill-overload.html",
+            "url": "https://kotobuki09.github.io/instructree/codex-skill-overload.html",
+            "isPartOf": {
+              "@type": "WebSite",
+              "name": "Instructree",
+              "url": "https://kotobuki09.github.io/instructree/"
+            }
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Can installing too many Codex skills hide skill descriptions?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Codex renders the model-visible skill catalog within a bounded budget. Current source shortens descriptions when the full catalog exceeds that budget and can omit entries when even minimum lines do not fit."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does Instructree automatically disable large Codex skills?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Instructree is read-only. It ranks approximate configured contributors and reports duplicates and supported user configuration, leaving relevance and configuration changes to the user."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which Codex skills should an engineering project install first?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Start with a small task-oriented set covering discovery, testing, diagnosis, review, research, and verification. Instructree's starter audit checks six source-grounded companions and prints commands only for missing skills."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Instructree home">
+        <span class="brand-mark" aria-hidden="true">⌁</span>
+        <span>Instructree</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#workflow">Workflow</a>
+        <a href="#evidence">Evidence</a>
+        <a class="nav-cta" href="https://github.com/kotobuki09/instructree">View on GitHub</a>
+      </nav>
+    </header>
+
+    <main class="guide">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="index.html">Instructree</a>
+        <span aria-hidden="true">/</span>
+        <span>Codex skill overload</span>
+      </nav>
+
+      <article>
+        <header class="guide-hero">
+          <p class="eyebrow"><span></span> Codex skill-context guide</p>
+          <h1>More Codex skills can mean less useful skill context.</h1>
+          <p class="guide-lede">Codex gives the model a bounded catalog of skill names, descriptions, and locations. When that catalog grows, descriptions can be shortened and entries can eventually be omitted. Measure the configured catalog, find its largest contributors, and keep the stack focused before adding another skill.</p>
+          <div class="guide-command" aria-label="Audit Codex skill-list pressure">
+            <span class="prompt" aria-hidden="true">$</span>
+            <code>npx --yes github:kotobuki09/instructree#v0.20.0 skills . --client codex</code>
+          </div>
+          <p class="guide-note">Read-only local audit · logical paths · no model call · no automatic disable or deletion</p>
+        </header>
+
+        <section class="guide-section" aria-labelledby="budget-title">
+          <div class="section-kicker">What Codex does</div>
+          <h2 id="budget-title">The catalog is bounded before a skill is invoked.</h2>
+          <p>Current Codex source uses a configured token budget when present, otherwise two percent of the known model context window. When the window is unavailable it falls back to an 8,000-character budget. A configured value is capped at 10,000 tokens. Each catalog description is first capped at 1,024 characters.</p>
+          <p>If full lines do not fit, Codex distributes description space across entries. If even name-and-location lines exceed the budget, later entries can be omitted from the model-visible list. This is catalog visibility, not the size of a selected skill's full <code>SKILL.md</code>.</p>
+          <div class="callout">
+            <strong>Instructree reports an estimate, not a live prompt dump</strong>
+            <p>The audit uses logical redacted paths and the 8,000-character fallback model. A live session may use a model-specific token budget and shorter path aliases, and can include product or plugin skills outside this static audit.</p>
+          </div>
+        </section>
+
+        <section class="guide-section" id="workflow" aria-labelledby="workflow-title">
+          <div class="section-kicker">Read-only workflow</div>
+          <h2 id="workflow-title">Find pressure before deciding what is relevant.</h2>
+          <ol class="step-list">
+            <li>
+              <div>
+                <h3>Audit both user roots and repository scopes</h3>
+                <p><code>instructree skills</code> checks the shared <code>~/.agents/skills</code> root, Codex's deprecated default <code>~/.codex/skills</code> compatibility root, and repository-local scopes. It keeps their provenance distinct and excludes hidden system descendants.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>Inspect the largest configured contributors</h3>
+                <p>The concise report ranks up to five enabled candidates by estimated fallback-character cost. It applies supported user configuration first, caps descriptions like current Codex, and retains logical paths so the report is share-safe.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>Resolve duplicate names before adding more</h3>
+                <p>A same-name user and repository skill can create ambiguous expectations even when runtime precedence is deterministic. Inspect both sources and keep the intended copy; Instructree never chooses or deletes one for you.</p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>Check a deliberately small starter stack</h3>
+                <p>Run <code>instructree starter</code> to compare six source-grounded engineering companions with local state. It covers discovery, testing, diagnosis, review, research, and verification, and prints install commands only for missing companions.</p>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <section class="guide-section" aria-labelledby="output-title">
+          <div class="section-kicker">Example signal</div>
+          <h2 id="output-title">The ranking makes aggregate pressure reviewable.</h2>
+          <pre><code>signals
+duplicate names: 2 · metadata failures: 0 · metadata warnings: 1
+skill-list estimate: exceeds-unknown-window-reference · 12640/8000 chars
+
+largest configured contributors · top 5 of 34
+- research-suite · 1112 chars · description capped for estimate · ~/.agents/skills/research-suite/SKILL.md
+- deployment-review · 884 chars · ~/.agents/skills/deployment-review/SKILL.md</code></pre>
+          <p>High estimated cost is not proof that a skill is bad or unused. It is a place to start a relevance review. Use <code>--json</code> for deterministic structured data and inspect the actual <code>SKILL.md</code> before changing configuration.</p>
+        </section>
+
+        <section class="guide-section" aria-labelledby="stack-title">
+          <div class="section-kicker">Focused setup</div>
+          <h2 id="stack-title">Install for tasks, not for collection size.</h2>
+          <p>The starter stack is intentionally small. Popularity is only a discovery filter; it does not establish quality, security, or fit. Review every external skill before installation because skill instructions influence agent decisions.</p>
+          <pre><code>$ instructree starter .
+focused stack · 6/6 ready
+✓ find-skills
+✓ tdd
+✓ diagnosing-bugs
+✓ code-review
+✓ research
+✓ verification-before-completion</code></pre>
+          <p>See the <a href="https://github.com/kotobuki09/instructree/blob/main/docs/codex-setup.md">Codex setup and selection rationale</a> for the pinned sources and install commands.</p>
+        </section>
+
+        <section class="guide-section" id="evidence" aria-labelledby="evidence-title">
+          <div class="section-kicker">Primary evidence</div>
+          <h2 id="evidence-title">The estimate follows current source while stating what it cannot know.</h2>
+          <ul class="source-list">
+            <li><a href="https://github.com/openai/codex/blob/9b4a0f8a0a60349ecfcc3c32d1dd050ce2efc253/codex-rs/ext/skills/src/render.rs">Codex skill renderer at <code>9b4a0f8</code></a> — default and configured budgets, per-description cap, truncation, omission, and path aliasing.</li>
+            <li><a href="https://github.com/openai/codex/blob/9b4a0f8a0a60349ecfcc3c32d1dd050ce2efc253/codex-rs/config/src/skills_config.rs">Codex skill configuration at <code>9b4a0f8</code></a> — user-facing budget and enablement fields.</li>
+            <li><a href="https://developers.openai.com/codex/skills">Official Codex skills documentation</a> — skill discovery, installation, and configuration.</li>
+            <li><a href="https://github.com/openai/codex/issues/19679">openai/codex#19679</a> and <a href="https://github.com/openai/codex/issues/24299">#24299</a> — user reports requesting configurable or clearer skill metadata budgets.</li>
+            <li><a href="https://github.com/openai/codex/issues/25324">openai/codex#25324</a> — user demand for clearer same-name skill precedence.</li>
+          </ul>
+        </section>
+
+        <section class="guide-section guide-cta" aria-labelledby="next-title">
+          <div class="section-kicker">Next step</div>
+          <h2 id="next-title">Measure the catalog before installing another skill.</h2>
+          <p>Run the read-only audit, review duplicates and the largest configured contributors, then use the focused starter check to fill only real engineering gaps.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="https://github.com/kotobuki09/instructree">Get Instructree <span aria-hidden="true">→</span></a>
+            <a class="button secondary" href="codex-agents-md-debugger.html">Debug AGENTS.md</a>
+          </div>
+        </section>
+      </article>
+    </main>
+
+    <footer>
+      <span>Instructree · MIT licensed</span>
+      <span>Local static analysis. No model calls. No telemetry.</span>
+    </footer>
+  </body>
+</html>

@@ -55,6 +55,8 @@ The starter audit is read-only. It classifies six source-grounded companions as 
 
 If Codex appears to ignore a parent file, follow the source-grounded [Codex AGENTS.md debugging guide](https://kotobuki09.github.io/instructree/codex-agents-md-debugger.html) for project-root markers, overrides, byte budgets, user instructions, and disabled skills.
 
+If a large skill catalog is losing useful descriptions, use the [Codex skill-overload guide](https://kotobuki09.github.io/instructree/codex-skill-overload.html) to find the largest enabled contributors, review duplicates, and return to a focused stack without automatic deletion.
+
 Trace the Codex project instructions for one file:
 
 ```bash
@@ -67,7 +69,7 @@ Audit Codex user and repository-local skill candidate scopes plus supported user
 instructree skills . --client codex
 ```
 
-The default report keeps scope counts and every actionable finding concise. It audits the shared `~/.agents/skills` user root plus Codex's deprecated `~/.codex/skills` compatibility root, keeping their provenance distinct so installer mismatches and cross-root duplicates are visible. It reads supported skill settings from user `~/.codex/config.toml` to explain disabled candidates, later-rule precedence, unmatched selectors, catalog injection, bundled skills, and the configured context cap. Add `--all` for the complete human-readable inventory or `--json` for the full structured result. The [pinned root-compatibility note](docs/research/codex-user-skill-roots.md) documents the source and the custom `CODEX_HOME` limitation.
+The default report keeps scope counts and every actionable finding concise. It audits the shared `~/.agents/skills` user root plus Codex's deprecated `~/.codex/skills` compatibility root, keeping their provenance distinct so installer mismatches and cross-root duplicates are visible. It reads supported skill settings from user `~/.codex/config.toml` to explain disabled candidates, later-rule precedence, unmatched selectors, catalog injection, bundled skills, and the configured context cap. It also ranks up to five enabled candidates by approximate fallback-character cost, using current Codex's 1,024-character per-description cap. Add `--all` for the complete human-readable inventory or `--json` for the full structured result. The [pinned root-compatibility note](docs/research/codex-user-skill-roots.md) documents the source and the custom `CODEX_HOME` limitation.
 
 Install from GitHub if you want the command everywhere:
 
@@ -94,6 +96,7 @@ If Instructree catches a stale or conflicting agent instruction before your next
 - UTF-8 BOM-prefixed `SKILL.md` frontmatter that [current Codex versions may misreport as missing](docs/research/codex-skill-utf8-bom.md);
 - disabled candidates, unmatched selectors, and unsupported relevant syntax in user `~/.codex/config.toml` skill settings;
 - user skills split between the shared `~/.agents/skills` root and Codex's deprecated default `~/.codex/skills` compatibility root;
+- the largest enabled contributors to Codex's bounded model-visible skill catalog, with the estimate boundary stated explicitly;
 - Codex project-root markers, fallback filenames, byte budgets, user instructions, and project instruction chains in one redacted pre-session report;
 - ignored parent instructions hidden by a nearer Codex project-root marker, with redacted ancestor labels and the outer marker that explains the boundary;
 - duplicate skill names across `.agents`, `.claude`, and `.github`;

@@ -4,6 +4,8 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+- Rank the largest enabled contributors to Codex's bounded skill catalog using the current per-description cap, and add a source-grounded skill-overload guide.
+
 ## 0.19.0 — 2026-08-26
 
 - Audit both the shared `~/.agents/skills` user root and Codex's deprecated `~/.codex/skills` compatibility root, while keeping their provenance distinct and excluding hidden system descendants.

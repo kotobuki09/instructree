@@ -15,6 +15,17 @@ async function writeFiles(root, files) {
   }
 }
 
+function estimatedSkillLine(skill) {
+  const name = skill.name ?? "(unnamed)";
+  const sourceDescription = Array.from(skill.description ?? "");
+  const description = sourceDescription.length > 1024
+    ? `${sourceDescription.slice(0, 1021).join("")}...`
+    : sourceDescription.join("");
+  return description
+    ? `- ${name}: ${description} (file: ${skill.path})\n`
+    : `- ${name}: (file: ${skill.path})\n`;
+}
+
 test("audits Codex user and repository skill scopes without exposing absolute paths", async (context) => {
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "instructree-skills-"));
   const repository = path.join(temporary, "repo");
@@ -52,12 +63,13 @@ test("audits Codex user and repository skill scopes without exposing absolute pa
   assert.equal(result.pressure.unknownContextWindowReferenceChars, 8000);
   assert.equal(result.pressure.status, "within-unknown-window-reference");
   const estimatedNames = result.skills.reduce((total, skill) => total + Array.from(skill.name ?? "(unnamed)").length, 0);
-  const estimatedDescriptions = result.skills.reduce((total, skill) => total + Array.from(skill.description ?? "").length, 0);
+  const estimatedDescriptions = result.skills.reduce((total, skill) => total + Math.min(Array.from(skill.description ?? "").length, 1024), 0);
   const estimatedPaths = result.skills.reduce((total, skill) => total + Array.from(skill.path).length, 0);
+  const estimatedInitialList = result.skills.reduce((total, skill) => total + Array.from(estimatedSkillLine(skill)).length, 0);
   assert.equal(result.pressure.estimatedNameChars, estimatedNames);
   assert.equal(result.pressure.estimatedDescriptionChars, estimatedDescriptions);
   assert.equal(result.pressure.estimatedPathChars, estimatedPaths);
-  assert.equal(result.pressure.estimatedInitialListChars, estimatedNames + estimatedDescriptions + estimatedPaths + result.skills.length * 3);
+  assert.equal(result.pressure.estimatedInitialListChars, estimatedInitialList);
   assert.equal(result.configuration.status, "missing");
   assert.equal(result.skills.every((skill) => skill.configuredEnabled), true);
   assert.equal(result.pressure.configuredEstimatedInitialListChars, result.pressure.estimatedInitialListChars);
@@ -100,15 +112,46 @@ test("marks unsupported skill config forms instead of partially interpreting the
 test("labels an overlong approximate initial list against the unknown-window reference", async (context) => {
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "instructree-skills-pressure-"));
   const repository = path.join(temporary, "repo");
-  await writeFiles(repository, {
-    ".git/HEAD": "ref: refs/heads/main\n",
-    ".agents/skills/large/SKILL.md": `---\nname: large\ndescription: ${"x".repeat(8000)}\n---\n`,
-  });
+  const files = { ".git/HEAD": "ref: refs/heads/main\n" };
+  for (let index = 1; index <= 8; index += 1) {
+    files[`.agents/skills/large-${index}/SKILL.md`] = `---\nname: large-${index}\ndescription: ${"x".repeat(2000)}\n---\n`;
+  }
+  await writeFiles(repository, files);
   context.after(() => fs.rm(temporary, { recursive: true, force: true }));
 
   const result = await auditCodexSkills(repository, path.join(temporary, "home"));
   assert.equal(result.pressure.status, "exceeds-unknown-window-reference");
   assert.ok(result.pressure.estimatedInitialListChars > result.pressure.unknownContextWindowReferenceChars);
+});
+
+test("ranks the largest configured contributors using the current Codex description cap", async (context) => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "instructree-skills-contributors-"));
+  const repository = path.join(temporary, "repo");
+  const home = path.join(temporary, "home");
+  await writeFiles(repository, { ".git/HEAD": "ref: refs/heads/main\n" });
+  await writeFiles(home, {
+    ".agents/skills/heavy/SKILL.md": `---\nname: heavy\ndescription: ${"h".repeat(1500)}\n---\n`,
+    ".agents/skills/medium/SKILL.md": `---\nname: medium\ndescription: ${"m".repeat(500)}\n---\n`,
+    ".agents/skills/small/SKILL.md": "---\nname: small\ndescription: Small helper.\n---\n",
+    ".agents/skills/disabled-heavy/SKILL.md": `---\nname: disabled-heavy\ndescription: ${"d".repeat(1800)}\n---\n`,
+    ".codex/config.toml": "[[skills.config]]\nname = \"disabled-heavy\"\nenabled = false\n",
+  });
+  context.after(() => fs.rm(temporary, { recursive: true, force: true }));
+
+  const result = await auditCodexSkills(repository, home);
+  assert.deepEqual(result.pressure.topConfiguredContributors.map((item) => item.name), ["heavy", "medium", "small"]);
+  assert.equal(result.pressure.topConfiguredContributors[0].descriptionChars, 1024);
+  assert.equal(result.pressure.topConfiguredContributors[0].descriptionTruncated, true);
+  assert.equal(result.pressure.topConfiguredContributors.some((item) => item.name === "disabled-heavy"), false);
+  assert.match(result.pressure.estimateModel, /1,024/);
+  assert.match(result.provenance.renderSource, /9b4a0f8a0a60349ecfcc3c32d1dd050ce2efc253/);
+
+  const output = [];
+  await run(["skills", repository, "--home", home], { log: (value) => output.push(value) });
+  process.exitCode = 0;
+  assert.match(output[0], /largest configured contributors · top 3 of 3/);
+  assert.match(output[0], /heavy · \d+ chars/);
+  assert.equal(output[0].includes(temporary), false);
 });
 
 test("reports one precise metadata failure for a BOM-prefixed Codex skill", async (context) => {
@@ -277,7 +320,8 @@ test("skills CLI emits deterministic JSON and exposes the audit in help", async 
   assert.match(human[0], /possible duplicate skill names/);
   assert.match(human[0], /repo-skill\/SKILL\.md:2/);
   assert.match(human[0], /metadata warnings/);
-  assert.doesNotMatch(human[0], /clean\/SKILL\.md/);
+  assert.match(human[0], /largest configured contributors/);
+  assert.match(human[0], /clean\/SKILL\.md/);
   assert.match(expanded[0], /clean\/SKILL\.md/);
   assert.match(human[0], /2 skill candidates · full inventory omitted/);
   await assert.rejects(() => run(["skills", cwd, "--client", "claude"]), /unknown client: claude/);
