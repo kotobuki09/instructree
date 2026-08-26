@@ -1,6 +1,6 @@
 {
   "name": "instructree",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "Map and lint the instructions your AI coding agents will actually use.",
   "type": "module",
   "bin": {
