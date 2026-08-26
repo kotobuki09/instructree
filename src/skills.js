@@ -424,15 +424,28 @@ export async function auditCodexSkills(
     scanErrors.push(...result.errors);
   }
   allSkills.sort((left, right) => left.order - right.order || left.path.localeCompare(right.path));
+  const sharedUserNames = new Set(
+    allSkills
+      .filter((skill) => skill.scope === "user" && skill.scopeVariant === "shared" && skill.name)
+      .map((skill) => skill.name),
+  );
+  for (const skill of allSkills) {
+    skill.legacyOnlyUserRoot = skill.scope === "user"
+      && skill.scopeVariant === "legacy"
+      && Boolean(skill.name)
+      && !sharedUserNames.has(skill.name);
+  }
   const { configuration, enabledByPath } = await resolveCodexSkillsConfig(home, allSkills);
   for (const skill of allSkills) {
     skill.configuredEnabled = enabledByPath.get(skill.absolutePath) ?? true;
   }
   const configuredByPath = new Map(allSkills.map((skill) => [skill.path, skill.configuredEnabled]));
+  const legacyOnlyByPath = new Map(allSkills.map((skill) => [skill.path, skill.legacyOnlyUserRoot]));
   for (const scope of scannedScopes) {
     scope.skills = scope.skills.map((skill) => ({
       ...skill,
       configuredEnabled: configuredByPath.get(skill.path) ?? true,
+      legacyOnlyUserRoot: legacyOnlyByPath.get(skill.path) ?? false,
     }));
   }
 
@@ -521,6 +534,7 @@ export async function auditCodexSkills(
       duplicateCount: duplicates.length,
       crossScopeDuplicateCount: duplicates.filter((item) => item.crossScope).length,
       symlinkedSkillCount: allSkills.filter((skill) => skill.symlinked).length,
+      legacyOnlyUserSkillCount: allSkills.filter((skill) => skill.legacyOnlyUserRoot).length,
       metadataFailureCount: metadataFailures.length,
       metadataWarningCount: metadataWarnings.length,
       scanErrorCount: scanErrors.length,

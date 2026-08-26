@@ -470,6 +470,9 @@ test("audits canonical and deprecated Codex user skill roots", async (context) =
   assert.equal(result.skills.some((skill) => skill.name === "bundled"), false);
   assert.equal(result.duplicates[0].name, "dual");
   assert.equal(result.duplicates[0].crossScope, true);
+  assert.equal(result.signals.legacyOnlyUserSkillCount, 1);
+  assert.equal(result.skills.find((skill) => skill.name === "legacy").legacyOnlyUserRoot, true);
+  assert.equal(result.skills.find((skill) => skill.name === "dual" && skill.scopeVariant === "legacy").legacyOnlyUserRoot, false);
   assert.deepEqual(result.duplicates[0].occurrences.map((item) => item.scopePath), [
     "~/.agents/skills",
     "~/.codex/skills",
@@ -479,5 +482,6 @@ test("audits canonical and deprecated Codex user skill roots", async (context) =
   const output = [];
   assert.equal(await run(["skills", repository, "--home", home, "--all"], { log: (value) => output.push(value) }), 0);
   assert.match(output.join("\n"), /legacy user scope · ~\/\.codex\/skills/);
+  assert.match(output.join("\n"), /legacy-only user candidates: 1/);
   assert.equal(output.join("\n").includes(temporary), false);
 });
