@@ -4,6 +4,10 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+## 0.22.0 — 2026-08-26
+
+- Flag named skill candidates found only in Codex's deprecated default user root as a static installer-compatibility signal, without claiming live TUI or Desktop state.
+
 ## 0.21.0 — 2026-08-26
 
 - Report redacted provenance for symlinked Codex skill candidates and summarize their count without claiming runtime namespace ownership.
