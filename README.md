@@ -24,19 +24,19 @@ It also debugs a subtle Codex failure mode: a nested `.git` or configured projec
 No install or API key:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.19.0
+npx --yes github:kotobuki09/instructree#v0.20.0
 ```
 
 Add the same audit to every pull request without copying workflow YAML:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.19.0 init
+npx --yes github:kotobuki09/instructree#v0.20.0 init
 ```
 
 Send findings to GitHub code scanning with one command:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.19.0 init --code-scanning
+npx --yes github:kotobuki09/instructree#v0.20.0 init --code-scanning
 ```
 
 Diagnose Codex instructions, supported user config, and skill state in one share-safe report:
@@ -60,7 +60,7 @@ If a large skill catalog is losing useful descriptions, use the [Codex skill-ove
 Trace the Codex project instructions for one file:
 
 ```bash
-npx --yes github:kotobuki09/instructree#v0.19.0 explain src/api/client.ts --client codex
+npx --yes github:kotobuki09/instructree#v0.20.0 explain src/api/client.ts --client codex
 ```
 
 Audit Codex user and repository-local skill candidate scopes plus supported user config state (the report is read-only and redacts absolute paths):
@@ -74,14 +74,14 @@ The default report keeps scope counts and every actionable finding concise. It a
 Install from GitHub if you want the command everywhere:
 
 ```bash
-npm install --global github:kotobuki09/instructree#v0.19.0
+npm install --global github:kotobuki09/instructree#v0.20.0
 instructree
 ```
 
 Install the native skill for Codex with GitHub CLI 2.90 or later:
 
 ```bash
-gh skill install kotobuki09/instructree instructree@v0.19.0 --agent codex --scope user
+gh skill install kotobuki09/instructree instructree@v0.20.0 --agent codex --scope user
 ```
 
 Or use the cross-agent `skills` installer: `npx skills add kotobuki09/instructree --skill instructree -g --agent codex`.
@@ -212,7 +212,7 @@ Exit codes are `0` for a passing policy, `1` for diagnostics that fail the selec
 
 Candidate existence, empty-file behavior, and byte truncation are also checked against the pinned [Codex implementation](https://github.com/openai/codex/blob/9be8d6e1c3dbb145d2d7ac3ba46729340e6d8d40/codex-rs/core/src/agents_md.rs), because those details are more precise than the user guide.
 
-`skills [cwd] [--client codex]` inventories the user `~/.agents/skills` scope and each `.agents/skills` directory from the current directory to the repository root. It recursively scans the depth-bounded local roots, follows symlinked skill folders, deduplicates canonical targets, skips hidden descendants, and keeps output paths logical and repository-relative. It reports possible duplicate names with source lines, malformed `SKILL.md` metadata, scan failures, and an approximate initial-list character estimate that includes name, description, and logical path. It also reads the supported skill subset of user `~/.codex/config.toml`, applying current Codex name/path selector and later-rule precedence to report disabled candidates, unmatched rules, catalog injection, bundled-skill state, and `max_context_tokens`. Unsupported relevant syntax fails closed: no user rules are applied and the affected lines are reported. The estimate is compared only with the documented 8,000-character reference used when the context window is unknown; Codex otherwise uses at most 2% of the model context, which can differ. `--home <home>` is an optional override for testing or inspecting another user scope. This read-only audit excludes admin/system and plugin skills, session flags, project config (which current Codex main does not apply to skill rules), product restrictions, and configured project-root markers, so it does not claim the exact loaded list. Instructree does not install skills, upload files, or write to either scope. The config behavior is documented in the pinned [Codex skill-config research note](docs/research/codex-skill-config.md); discovery remains grounded in official [Codex skills documentation](https://developers.openai.com/codex/skills) and pinned Codex [discovery](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/discovery.rs) and [merge](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/host_merge.rs) implementations.
+`skills [cwd] [--client codex]` inventories the user `~/.agents/skills` scope and each `.agents/skills` directory from the current directory to the repository root. It recursively scans the depth-bounded local roots, follows symlinked skill folders, deduplicates canonical targets, skips hidden descendants, and keeps output paths logical and repository-relative. It reports possible duplicate names with source lines, malformed `SKILL.md` metadata, scan failures, and an approximate initial-list character estimate that includes name, description, and logical path. It also reads the supported skill subset of user `~/.codex/config.toml`, applying current Codex name/path selector and later-rule precedence to report disabled candidates, unmatched rules, catalog injection, bundled-skill state, and `max_context_tokens`. Unsupported relevant syntax fails closed: no user rules are applied and the affected lines are reported. The estimate is compared only with the documented 8,000-character reference used when the context window is unknown; Codex otherwise defaults to 2% of the known model context, and explicit configuration can differ. `--home <home>` is an optional override for testing or inspecting another user scope. This read-only audit excludes admin/system and plugin skills, session flags, project config (which current Codex main does not apply to skill rules), product restrictions, and configured project-root markers, so it does not claim the exact loaded list. Instructree does not install skills, upload files, or write to either scope. The config behavior is documented in the pinned [Codex skill-config research note](docs/research/codex-skill-config.md); discovery remains grounded in official [Codex skills documentation](https://developers.openai.com/codex/skills) and pinned Codex [discovery](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/discovery.rs) and [merge](https://github.com/openai/codex/blob/399be2d6b509900dc17b45ca6752b0a4ee882ab1/codex-rs/ext/skills/src/loader/host_merge.rs) implementations.
 
 `starter [cwd]` reuses that local inventory to check a focused six-skill engineering stack covering discovery, testing, diagnosis, review, research, and verification. It reports ready, disabled, invalid, and missing states using logical paths, includes the current catalog-pressure context, and prints installation commands only for missing companions. It does not call the skills directory, download packages, edit configuration, or install anything. The selection is a dated, source-linked recommendation rather than a claim that popularity proves quality or task fit; review each linked `SKILL.md` before installation.
 
@@ -229,7 +229,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: kotobuki09/instructree@v0.19.0
+      - uses: kotobuki09/instructree@v0.20.0
         with:
           strict: true
 ```

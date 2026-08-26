@@ -103,7 +103,7 @@
           <p class="guide-lede">When an instruction looks present on disk but absent in Codex, guessing from the model's response is unreliable. Inspect the deterministic pre-session inputs first: the selected project root, file precedence, shared byte budget, global user instructions, and skill configuration.</p>
           <div class="guide-command" aria-label="Run the Codex setup doctor">
             <span class="prompt" aria-hidden="true">$</span>
-            <code>npx --yes github:kotobuki09/instructree#v0.19.0 doctor .</code>
+            <code>npx --yes github:kotobuki09/instructree#v0.20.0 doctor .</code>
           </div>
           <p class="guide-note">Local static analysis · zero runtime dependencies · no model call · does not upload repository content</p>
         </header>
@@ -207,7 +207,7 @@
           <div class="section-kicker">Share-safe evidence</div>
           <h2 id="share-title">Capture the configuration result without dumping a session.</h2>
           <p>For a deterministic report suitable for tooling or a minimal bug reproduction, add <code>--json</code>:</p>
-          <pre><code>npx --yes github:kotobuki09/instructree#v0.19.0 doctor . --json</code></pre>
+          <pre><code>npx --yes github:kotobuki09/instructree#v0.20.0 doctor . --json</code></pre>
           <p>Both text and JSON replace the repository and home locations with logical labels. The command reads only the supported user-config subset and fails closed when relevant TOML syntax is outside that subset.</p>
           <div class="callout">
             <strong>Important boundary</strong>

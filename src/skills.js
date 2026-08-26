@@ -495,7 +495,7 @@ export async function auditCodexSkills(
     topConfiguredContributors: topPressureContributors(configuredSkills),
     topContributorLimit: TOP_PRESSURE_CONTRIBUTOR_LIMIT,
     estimateModel: "Codex's 8,000-character unknown-context fallback with a 1,024-character per-skill description cap and logical redacted paths; runtime path aliasing and tokenization are not modeled.",
-    note: "Approximate only: Codex normally budgets at most 2% of the model context and may use tokens or path aliases; the configured estimate reflects supported user config only.",
+    note: "Approximate only: Codex defaults to 2% of the known model context and may use tokens or path aliases; the configured estimate reflects supported user config only.",
   };
 
   return {
