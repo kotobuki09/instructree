@@ -4,6 +4,7 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+- Add a direct README path from the Codex local-scope audit to the Desktop repository-skill troubleshooting workflow.
 - Add a source-grounded Codex Desktop repository-local skill troubleshooting guide that keeps static catalog evidence separate from native runtime visibility.
 
 ## 0.20.0 — 2026-08-26
