@@ -199,6 +199,7 @@ async function discoverScope(scope, seenCanonicalSkillTargets) {
       skills.push({
         ...metadataReport(scope, relativePath, content),
         absolutePath: canonicalSkillFile,
+        symlinked: path.resolve(skillFile) !== canonicalSkillFile,
         scope: scope.kind,
         scopeVariant: scope.variant ?? null,
         scopeDirectory: scopeDirectory(scope),
@@ -519,6 +520,7 @@ export async function auditCodexSkills(
     signals: {
       duplicateCount: duplicates.length,
       crossScopeDuplicateCount: duplicates.filter((item) => item.crossScope).length,
+      symlinkedSkillCount: allSkills.filter((skill) => skill.symlinked).length,
       metadataFailureCount: metadataFailures.length,
       metadataWarningCount: metadataWarnings.length,
       scanErrorCount: scanErrors.length,

@@ -4,6 +4,7 @@ All notable changes to Instructree are documented here.
 
 ## Unreleased
 
+- Report redacted provenance for symlinked Codex skill candidates and summarize their count without claiming runtime namespace ownership.
 - Clarify that a fresh session, rather than a resumed thread, is the appropriate native post-change check for repository-local Codex skills.
 - Add a direct README path from the Codex local-scope audit to the Desktop repository-skill troubleshooting workflow.
 - Add a source-grounded Codex Desktop repository-local skill troubleshooting guide that keeps static catalog evidence separate from native runtime visibility.

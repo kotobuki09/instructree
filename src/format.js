@@ -195,7 +195,7 @@ export function formatSkills(result, { showAll = false } = {}) {
   lines.push(
     "",
     cyan("signals"),
-    `duplicate names: ${result.signals.duplicateCount} · metadata failures: ${result.signals.metadataFailureCount} · metadata warnings: ${result.signals.metadataWarningCount} · scan errors: ${result.signals.scanErrorCount}`,
+    `duplicate names: ${result.signals.duplicateCount} · symlinked candidates: ${result.signals.symlinkedSkillCount} · metadata failures: ${result.signals.metadataFailureCount} · metadata warnings: ${result.signals.metadataWarningCount} · scan errors: ${result.signals.scanErrorCount}`,
     `skill-list estimate: ${result.pressure.status} · ${result.pressure.estimatedInitialListChars}/${result.pressure.unknownContextWindowReferenceChars} chars`,
   );
   const contributors = result.pressure.topConfiguredContributors;

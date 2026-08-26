@@ -360,6 +360,13 @@ test("follows symlinked Codex skill folders", async (context) => {
   const result = await auditCodexSkills(repository, home);
   assert.deepEqual(result.skills.map((skill) => skill.path), [".agents/skills/linked/SKILL.md"]);
   assert.equal(result.skills[0].name, "linked");
+  assert.equal(result.skills[0].symlinked, true);
+  assert.equal(result.signals.symlinkedSkillCount, 1);
+
+  const output = [];
+  await run(["skills", repository, "--home", home], { log: (value) => output.push(value) });
+  process.exitCode = 0;
+  assert.match(output[0], /symlinked candidates: 1/);
 });
 
 test("deduplicates canonical aliases and stops symlink directory cycles", async (context) => {
